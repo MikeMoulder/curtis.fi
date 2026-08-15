@@ -1,0 +1,17 @@
+{
+  "name": "curtis-fi",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI-managed concentrated liquidity on BDEX (BOT Chain)",
+  "type": "module",
+  "scripts": {
+    "verify:chain": "node scripts/verify-chain.mjs",
+    "verify:testnet": "node scripts/verify-chain.mjs --testnet",
+    "build:contracts": "forge build --root contracts",
+    "test:contracts": "forge test --root contracts --fork-url botchain",
+    "deploy:mainnet": "forge script script/Deploy.s.sol --root contracts --rpc-url botchain --broadcast"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

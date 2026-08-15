@@ -1,0 +1,30 @@
+# secrets — never commit
+.env
+.env.*
+!.env.example
+
+# foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/*/dry-run/
+
+# contracts/lib/ is deliberately committed rather than kept as submodules, so a
+# fresh clone builds with no setup step. foundry.lock is tracked for the same
+# reason — it pins the exact dependency revisions.
+
+# node
+node_modules/
+.next/
+out/
+dist/
+*.tsbuildinfo
+
+# os / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# logs
+*.log
+npm-debug.log*
