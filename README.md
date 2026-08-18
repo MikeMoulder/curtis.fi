@@ -103,14 +103,21 @@ This is proven, not asserted: see the `test_AgentCannot*` cases.
 | Contracts | `CurtisFactory`, `CurtisVault` — 46/46 fork tests pass |
 | Testnet deploy | **live and verified** — see below |
 | Mainnet deploy | not yet |
-| Frontend | not started |
-| Off-chain policy engine | not started |
+| Frontend | built: landing, vault, decision log, deposit/withdraw |
+| Off-chain policy engine | built: signals, model decision, guard, executor |
+
+The agent runs as a Next.js route (`/api/agent/run`) rather than a separate
+service, so there is one deploy, one language and one place secrets live.
+Its cycle is: read chain state, ask the model, check the answer against the
+same rules the contract enforces, simulate, broadcast. Every stage before the
+broadcast is free and can refuse, and a model error resolves to "hold" rather
+than to an action.
 
 ### Live on Bohr testnet (968)
 
 | | |
 |---|---|
-| `CurtisFactory` | [`0x3bAD8bC8…7513Dd7F7`](https://scan.bohr.life/address/0x3bad8bc89d24d75ca9d2958264a28977513dd7f7) — source verified on Blockscout |
+| `CurtisFactory` | [`0x3baD8bC8…7513Dd7F7`](https://scan.bohr.life/address/0x3bad8bc89d24d75ca9d2958264a28977513dd7f7) — source verified on Blockscout |
 | Smoke-test vault | [`0x52fF2Abb…Ca17022E`](https://scan.bohr.life/address/0x52ff2abb2b83c0b527e24e4da6cf96f2ca17022e) |
 | Agent signer | `0x7A3a4DF86FD62aD9001EC6EcdD495b52b2423Ef7` |
 
@@ -145,7 +152,7 @@ docs/
   botchain-addresses.md    every verified constant + measured pool economics
 scripts/
   verify-chain.mjs         re-verify all constants against the live chain
-web/                (empty — frontend next)
+web/                Next.js app + the agent route under app/api/agent
 ```
 
 ---

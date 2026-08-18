@@ -6,7 +6,7 @@
   "deployedAt": "2026-08-15",
   "contracts": {
     "CurtisFactory": {
-      "address": "0x3bAD8bC89d24d75ca9d2958264A28977513Dd7F7",
+      "address": "0x3baD8bC89d24d75ca9d2958264A28977513Dd7F7",
       "txHash": "0xdcdc5049a1aa26f8983321edfd52a6c4ea48e8a97c848b066434ed1ff4344182",
       "verified": true,
       "explorer": "https://scan.bohr.life/address/0x3bad8bc89d24d75ca9d2958264a28977513dd7f7",

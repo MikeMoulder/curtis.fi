@@ -10,6 +10,8 @@ import { Address } from "@/components/ui/Address";
 import { Reveal } from "@/components/ui/Reveal";
 import { Curtis, CURTIS_STATUS, type CurtisState } from "@/components/curtis/Curtis";
 import { RangeBand } from "@/components/position/RangeBand";
+import { RunCurtis } from "@/components/agent/RunCurtis";
+import { VaultActions } from "@/components/vault/VaultActions";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
 import { CurtisFactoryAbi } from "@/lib/abis/CurtisFactory";
 import { addresses, POOL_META } from "@/lib/addresses";
@@ -209,7 +211,7 @@ function SpecRow({ k, v }: { k: string; v: string }) {
 /* ── the vault ────────────────────────────────────────────────────────────── */
 
 function VaultView({ vault }: { vault: `0x${string}` }) {
-  const { info } = usePositionInfo(vault);
+  const { info, refetch: refetchPosition } = usePositionInfo(vault);
   const { guardrails } = useGuardrails(vault);
   const meta = useVaultMeta(vault);
   const spot = usePoolSpot();
@@ -264,7 +266,11 @@ function VaultView({ vault }: { vault: `0x${string}` }) {
 
       <div className="rule-fade my-10" />
 
-      <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+      <Reveal>
+        <RunCurtis vault={vault} onActed={refetchPosition} />
+      </Reveal>
+
+      <div className="mt-5 grid gap-5 lg:grid-cols-[1.4fr_1fr]">
         {/* ── position ── */}
         <Reveal>
           <div className="glass h-full rounded-3xl p-7">
@@ -373,6 +379,12 @@ function VaultView({ vault }: { vault: `0x${string}` }) {
           </div>
         </Reveal>
       </div>
+
+      <Reveal delay={120}>
+        <div className="mt-5">
+          <VaultActions vault={vault} onChanged={refetchPosition} />
+        </div>
+      </Reveal>
     </div>
   );
 }
