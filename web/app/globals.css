@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   Curtis — design system
+   Curtis design system
 
    Concept: an instrument, not a landing page.
 
@@ -9,7 +9,7 @@
 
    1. TYPE CONTRAST. A high-contrast editorial serif for display, a tight
       grotesque for prose, mono for every number. The jump from 130px serif
-      to a 10px mono label is the primary visual event on the page — more
+      to a 10px mono label is the primary visual event on the page: more
       than colour, more than the glass.
    2. NEAR-MONOCHROME. One accent, used almost nowhere. Colour is reserved
       for live data and status, so when something turns amber it reads as
@@ -47,7 +47,7 @@
   --color-bad: #fb7185;
 
   /* -- type ---------------------------------------------------------------- */
-  --font-display: var(--font-serif-display), ui-serif, Georgia, serif;
+  --font-display: var(--font-display-face), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono-jb), ui-monospace, monospace;
 
@@ -109,16 +109,18 @@ body {
 
 .display {
   font-family: var(--font-display);
-  font-weight: 400;
-  line-height: 0.88;
-  letter-spacing: -0.028em;
+  font-weight: 600;
+  line-height: 0.98;
+  letter-spacing: -0.038em;
 }
 
+/* Emphasis inside a headline. Same face, same weight: the phrase is marked by
+   colour alone. A second family or a slant here competes with the headline it
+   is meant to inflect, which is exactly what the earlier italic did. */
 .display-em {
   font-family: var(--font-display);
-  font-style: italic;
-  font-weight: 400;
-  letter-spacing: -0.02em;
+  font-weight: 600;
+  letter-spacing: -0.038em;
 }
 
 /* Wide-tracked mono caps. The counterweight to the display type. */
@@ -146,7 +148,7 @@ body {
 }
 
 /* ==========================================================================
-   Fog — larger, softer, slower than decoration. Depth you notice without
+   Fog. Larger, softer and slower than decoration: depth you notice without
    ever catching movement.
    ========================================================================== */
 
@@ -231,7 +233,7 @@ body {
   }
 }
 
-/* Grain — kills banding across wide dark washes, the main tell of a cheap
+/* Grain. Kills banding across wide dark washes, the main tell of a cheap
    dark theme. */
 .grain {
   position: fixed;
@@ -321,6 +323,36 @@ body {
 }
 .pulse {
   animation: pulse-soft 2.6s var(--ease-in-out-soft) infinite;
+}
+
+/* Scroll cue. A light travels down a hairline rather than an icon bouncing:
+   the motion reads as direction without the arrow having to move, so it stays
+   quiet enough to sit under a headline. */
+@keyframes cue-travel {
+  0% {
+    transform: translateY(-140%);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(140%);
+    opacity: 0;
+  }
+}
+
+@keyframes cue-nudge {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(3px);
+  }
 }
 
 @keyframes marquee {

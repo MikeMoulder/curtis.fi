@@ -3,8 +3,10 @@ import { Header } from "@/components/layout/Header";
 import { Curtis } from "@/components/curtis/Curtis";
 import { HeroCurtis } from "@/components/curtis/HeroCurtis";
 import { ConcentrationStudy } from "@/components/viz/ConcentrationStudy";
-import { LiveStrip } from "@/components/viz/LiveStrip";
 import { Reveal } from "@/components/ui/Reveal";
+import { ScrollCue } from "@/components/ui/ScrollCue";
+import { LiveStrip } from "@/components/viz/LiveStrip";
+import { Footer } from "@/components/layout/Footer";
 
 /** Measured off BDEX on 15 Aug 2026 — stated with its date so it ages honestly. */
 const M = {
@@ -13,7 +15,6 @@ const M = {
   apr: "6.4",
   aprRange: "4.7–9.9",
   positions: "911",
-  asOf: "15 August 2026",
 };
 
 export default function Home() {
@@ -26,11 +27,11 @@ export default function Home() {
         <div className="grid items-center gap-14 lg:grid-cols-[1.15fr_0.85fr]">
           <div>
             <Reveal>
-              <div className="label">Autonomous liquidity · BDEX</div>
+              <div className="label"></div>
             </Reveal>
 
             <Reveal delay={90}>
-              <h1 className="display mt-7 text-[clamp(50px,8.4vw,122px)]">
+              <h1 className="display mt-7 text-[clamp(33px,5.5vw,79px)]">
                 Liquidity that
                 <br />
                 <span className="display-em text-[var(--color-accent)]">keeps its place.</span>
@@ -79,16 +80,25 @@ export default function Home() {
           </Reveal>
         </div>
 
-        <Reveal delay={340} className="mt-auto pt-16">
-          <div className="rule-fade mb-6" />
-          <LiveStrip />
+        <Reveal delay={340} className="mt-auto flex justify-center pt-16">
+          <ScrollCue targetId="study" />
         </Reveal>
       </section>
 
-      {/* ══ the measured market ═══════════════════════════════════════════ */}
+      {/* ══ the market: live above, measured below ════════════════════════ */}
       <section className="mx-auto max-w-[1240px] px-6 py-24">
+        {/* Read from the pool contract on every poll. Kept visually separate
+            from the figures below, which were measured once on a date: mixing
+            a live number into a static row makes the whole row look live. */}
         <Reveal>
-          <div className="grid gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="glass rounded-2xl px-6 py-5">
+            <LiveStrip />
+          </div>
+        </Reveal>
+
+        <Reveal delay={90}>
+          <div className="label mt-14">Measured 15 August 2026</div>
+          <div className="mt-7 grid gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
             <Figure value={`$${M.tvl}`} label="Pool liquidity" note="USDT / WBOT, 0.3% tier" />
             <Figure value={`$${M.volume}`} label="Daily volume" note="observed over 14 days" />
             <Figure
@@ -119,7 +129,7 @@ export default function Home() {
           <Reveal>
             <div className="lg:sticky lg:top-32">
               <div className="label">The gap</div>
-              <div className="display mt-6 text-[clamp(80px,11vw,150px)] leading-[0.82] text-[var(--color-accent)]">
+              <div className="display mt-6 text-[clamp(52px,7.2vw,98px)] leading-[0.85] text-[var(--color-accent)]">
                 {M.positions}
               </div>
               <p className="mt-6 max-w-[280px] text-[13.5px] leading-relaxed text-[var(--color-lo)]">
@@ -242,20 +252,7 @@ export default function Home() {
         </Reveal>
       </section>
 
-      <footer className="border-t border-white/[0.06]">
-        <div className="mx-auto flex max-w-[1240px] flex-col gap-4 px-6 py-10 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex items-center gap-3">
-            <Curtis size={20} interactive={false} state="idle" />
-            <span className="display text-[16px]">Curtis</span>
-          </div>
-          <p className="max-w-[440px] text-[11.5px] leading-relaxed text-[var(--color-faint)]">
-            Figures measured from BDEX pool data on {M.asOf}. Passive APR is fees
-            divided by total pool liquidity. Providing liquidity carries risk,
-            including impermanent loss, which Curtis reduces and cannot remove. Past
-            fee generation does not guarantee future returns.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </>
   );
 }

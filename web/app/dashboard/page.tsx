@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/Button";
 import { Pill } from "@/components/ui/Pill";
 import { Address } from "@/components/ui/Address";
@@ -28,9 +29,9 @@ export default function DashboardPage() {
   const { vault, isLoading, refetch, factoryDeployed } = useVaultAddress();
 
   return (
-    <>
+    <div className="flex min-h-screen flex-col">
       <Header />
-      <main className="mx-auto max-w-[1240px] px-6 pt-32 pb-24">
+      <main className="mx-auto max-w-[1240px] px-6 pt-32 pb-24 w-full">
         {!isConnected ? (
           <Gate
             title="Connect to begin"
@@ -53,7 +54,8 @@ export default function DashboardPage() {
           <VaultView vault={vault} />
         )}
       </main>
-    </>
+      <Footer />
+    </div>
   );
 }
 

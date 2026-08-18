@@ -2,14 +2,15 @@
 
 import { usePoolSpot } from "@/lib/hooks/useCurtis";
 import { tickToWbotPrice, formatPrice } from "@/lib/ticks";
-import { activeChain } from "@/lib/chains";
 
 /**
- * A live readout across the top of the page.
+ * A live market readout, sitting above the measured figures.
  *
- * The price here is read from the pool contract on every poll, not baked into
- * the build — a landing page that shows a real, moving number is making a
- * claim it can be checked on, which is the entire posture of the product.
+ * Price and tick are read from the pool contract on every poll rather than
+ * baked into the build. A page showing a real, moving number is making a claim
+ * that can be checked, which is the posture the whole product takes. The green
+ * dots mark the two values that are genuinely live; the pair and fee tier are
+ * fixed properties of the pool.
  */
 export function LiveStrip() {
   const spot = usePoolSpot();
@@ -26,8 +27,6 @@ export function LiveStrip() {
       <Item label="Pool" value="USDT / WBOT" />
       <Divider />
       <Item label="Fee tier" value="0.30%" />
-      <Divider />
-      <Item label="Network" value={activeChain.name} />
       <Divider />
       <Item
         label="Tick"

@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Curtis } from "@/components/curtis/Curtis";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
-import { isTestnet, activeChain } from "@/lib/chains";
 
 const NAV = [
   { href: "/dashboard", label: "Vault" },
@@ -66,9 +65,6 @@ export function Header() {
           </nav>
 
           <div className="ml-auto flex items-center gap-4">
-            {isTestnet && (
-              <span className="label hidden md:inline">{activeChain.name}</span>
-            )}
             <ConnectButton />
           </div>
         </div>

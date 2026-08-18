@@ -2,6 +2,7 @@
 
 import { useAccount } from "wagmi";
 import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 import { Pill } from "@/components/ui/Pill";
 import { Address } from "@/components/ui/Address";
 import { Reveal } from "@/components/ui/Reveal";
@@ -18,9 +19,9 @@ export default function ActivityPage() {
   const { decisions, loading, error } = useDecisionLog(vault);
 
   return (
-    <>
+    <div className="flex min-h-screen flex-col">
       <Header />
-      <main className="mx-auto max-w-[980px] px-6 pt-32 pb-24">
+      <main className="mx-auto max-w-[980px] px-6 pt-32 pb-24 w-full">
         <Reveal>
           <div className="label">Audit trail</div>
           <h1 className="display mt-5 text-[clamp(34px,5vw,60px)]">
@@ -76,7 +77,8 @@ export default function ActivityPage() {
           </div>
         )}
       </main>
-    </>
+      <Footer />
+    </div>
   );
 }
 

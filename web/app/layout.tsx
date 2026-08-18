@@ -1,27 +1,24 @@
 import type { Metadata, Viewport } from "next";
-import {
-  Instrument_Serif,
-  Bodoni_Moda,
-  Space_Grotesk,
-  JetBrains_Mono,
-} from "next/font/google";
+import { Instrument_Sans, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
 
 /**
  * Three faces, three jobs.
  *
- * Instrument Serif carries the display type. It is the deliberate departure —
- * near every DeFi front end sets its headlines in the same geometric sans, and
- * a high-contrast serif reads as considered before a single word is read.
- * Space Grotesk handles UI and prose; JetBrains Mono carries every number, so
+ * Instrument Sans carries the display type at 600. The earlier serif treatment
+ * was set too large and leaned on an italic to mark emphasis, which put three
+ * words on three lines and read as decoration rather than structure. A tight
+ * grotesque holds a headline on two lines at this size, and emphasis is carried
+ * by colour instead of a second face.
+ *
+ * Space Grotesk handles UI and prose. JetBrains Mono carries every number, so
  * figures align in columns and never jitter as they update.
  */
-const serifDisplay = Instrument_Serif({
+const display = Instrument_Sans({
   subsets: ["latin"],
-  weight: "400",
-  style: ["normal", "italic"],
-  variable: "--font-serif-display",
+  weight: ["500", "600"],
+  variable: "--font-display-face",
   display: "swap",
 });
 
@@ -55,7 +52,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${serifDisplay.variable} ${grotesk.variable} ${mono.variable}`}
+      className={`${display.variable} ${grotesk.variable} ${mono.variable}`}
     >
       <body>
         <div className="fog" aria-hidden="true">
