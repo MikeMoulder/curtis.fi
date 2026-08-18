@@ -101,10 +101,21 @@ This is proven, not asserted: see the `test_AgentCannot*` cases.
 |---|---|
 | Chain constants verified | done, both networks — `npm run verify:chain` / `verify:testnet` |
 | Contracts | `CurtisFactory`, `CurtisVault` — 46/46 fork tests pass |
-| Testnet deploy | not yet |
+| Testnet deploy | **live and verified** — see below |
 | Mainnet deploy | not yet |
 | Frontend | not started |
 | Off-chain policy engine | not started |
+
+### Live on Bohr testnet (968)
+
+| | |
+|---|---|
+| `CurtisFactory` | [`0x3bAD8bC8…7513Dd7F7`](https://scan.bohr.life/address/0x3bad8bc89d24d75ca9d2958264a28977513dd7f7) — source verified on Blockscout |
+| Smoke-test vault | [`0x52fF2Abb…Ca17022E`](https://scan.bohr.life/address/0x52ff2abb2b83c0b527e24e4da6cf96f2ca17022e) |
+| Agent signer | `0x7A3a4DF86FD62aD9001EC6EcdD495b52b2423Ef7` |
+
+Created through the real factory, reading back the expected owner, agent and
+guardrails. Full record in [`deployments/968.json`](deployments/968.json).
 
 The suite runs against **live BDEX on both networks**, not mocks — including
 minting a real position in the real USDT/WBOT pool and exiting it again. A mock

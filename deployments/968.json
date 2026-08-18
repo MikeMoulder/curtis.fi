@@ -1,0 +1,43 @@
+{
+  "network": "Bohr testnet",
+  "chainId": 968,
+  "rpc": "https://rpc.bohr.life",
+  "explorer": "https://scan.bohr.life",
+  "deployedAt": "2026-08-15",
+  "contracts": {
+    "CurtisFactory": {
+      "address": "0x3bAD8bC89d24d75ca9d2958264A28977513Dd7F7",
+      "txHash": "0xdcdc5049a1aa26f8983321edfd52a6c4ea48e8a97c848b066434ed1ff4344182",
+      "verified": true,
+      "explorer": "https://scan.bohr.life/address/0x3bad8bc89d24d75ca9d2958264a28977513dd7f7",
+      "constructorArgs": {
+        "positionManager": "0xDAc3FcFF004d8a8675b94E44941A1a2e3b240090",
+        "pool": "0xA83dAda88e1d71810dfe89699dCE4d4E589Dd890",
+        "defaultAgent": "0x7A3a4DF86FD62aD9001EC6EcdD495b52b2423Ef7"
+      }
+    }
+  },
+  "roles": {
+    "admin": "0x8f2e3B58A9e77B6B91bbe0B9126a5681926d43aB",
+    "agent": "0x7A3a4DF86FD62aD9001EC6EcdD495b52b2423Ef7"
+  },
+  "bdex": {
+    "positionManager": "0xDAc3FcFF004d8a8675b94E44941A1a2e3b240090",
+    "v3Factory": "0x1C51c173323ec11BB4e3C4fD2314c225Dc4b5419",
+    "swapRouter": "0x07032d47A1b9f8460cBeE9dC17c1d3E438693929",
+    "pool": "0xA83dAda88e1d71810dfe89699dCE4d4E589Dd890",
+    "usdt": "0x75edC9335175Fc0552D51D48439F229c10420fe3",
+    "wbot": "0xD5452816194a3784dBa983426cCe7c122F4abd30"
+  },
+  "smokeTest": {
+    "vault": "0x52fF2Abb2B83c0b527E24E4DA6cf96f2Ca17022E",
+    "txHash": "0x828e8d286a01f6178aee30a6ca372dd2f49ac2b83814df76a6157ada0ccf23d4",
+    "owner": "0x8f2e3B58A9e77B6B91bbe0B9126a5681926d43aB",
+    "guardrails": {
+      "minRangeWidth": 600,
+      "maxRangeWidth": 12000,
+      "maxRebalancesPerDay": 6,
+      "maxCentreOffset": 300
+    }
+  }
+}

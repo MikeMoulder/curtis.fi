@@ -8,9 +8,11 @@ contracts/out/
 contracts/cache/
 contracts/broadcast/*/dry-run/
 
-# contracts/lib/ is deliberately committed rather than kept as submodules, so a
-# fresh clone builds with no setup step. foundry.lock is tracked for the same
-# reason — it pins the exact dependency revisions.
+# contracts/lib/ is intentionally not ignored. forge-std is committed as plain
+# files; openzeppelin-contracts is a submodule, which `forge build` initialises
+# automatically — a plain `git clone` followed by `forge build --root contracts`
+# is verified to work from scratch. foundry.lock is tracked so dependency
+# revisions stay pinned.
 
 # node
 node_modules/

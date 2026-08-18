@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Curtis — AI Liquidity Agent</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a0a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      user-select: none;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-14px); }
+    }
+    @keyframes blink {
+      0%, 90%, 100% { transform: scaleY(1); }
+      95% { transform: scaleY(0.15); }
+    }
+    @keyframes glowPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.2); }
+      50% { box-shadow: 0 0 28px 6px rgba(59,130,246,0.12); }
+    }
+    @keyframes react {
+      0% { transform: scale(1); }
+      25% { transform: scale(1.12) translateY(-6px); }
+      55% { transform: scale(0.94) translateY(3px); }
+      100% { transform: scale(1) translateY(0); }
+    }
+    @keyframes sparklePop {
+      0% { transform: scale(0) translate(0,0); opacity: 1; }
+      100% { transform: scale(1.5) translate(var(--tx), var(--ty)); opacity: 0; }
+    }
+    .curtis-wrap {
+      position: relative;
+      width: 160px;
+      height: 160px;
+      animation: float 3.5s ease-in-out infinite;
+      cursor: pointer;
+      transition: transform 0.3s ease-out;
+    }
+    .curtis-wrap.reacting {
+      animation: react 0.5s ease-out, float 3.5s ease-in-out infinite 0.5s;
+    }
+    .sphere {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 32% 28%, #60a5fa 0%, #3b82f6 35%, #2563eb 70%, #1d4ed8 100%);
+      position: relative;
+      box-shadow: 
+        inset -10px -10px 20px rgba(0,0,0,0.2),
+        inset 8px 8px 16px rgba(255,255,255,0.25),
+        0 10px 30px rgba(37,99,235,0.25),
+        0 4px 12px rgba(0,0,0,0.15);
+      animation: glowPulse 3s ease-in-out infinite;
+    }
+    .face {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 60%;
+      height: 35%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+    }
+    .eye {
+      width: 14px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      position: relative;
+      animation: blink 4.5s ease-in-out infinite;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+      transition: transform 0.15s ease-out;
+    }
+    .shadow {
+      width: 100px;
+      height: 14px;
+      background: radial-gradient(ellipse at center, rgba(0,0,0,0.15) 0%, transparent 70%);
+      border-radius: 50%;
+      margin-top: 6px;
+      animation: glowPulse 3s ease-in-out infinite;
+    }
+    .label {
+      font-size: 15px;
+      font-weight: 600;
+      color: #e5e5e5;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+    .status {
+      font-size: 11px;
+      color: #737373;
+      font-family: 'SF Mono', Monaco, monospace;
+      margin-top: 2px;
+    }
+    .sparkle {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      background: white;
+      border-radius: 50%;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .sparkle.active {
+      animation: sparklePop 0.6s ease-out forwards;
+    }
+  </style>
+<base target="_blank">
+</head>
+<body>
+  <div class="curtis-wrap" id="curtis">
+    <div class="sphere">
+      <div class="face">
+        <div class="eye" id="eye-left"></div>
+        <div class="eye" id="eye-right"></div>
+      </div>
+    </div>
+  </div>
+  <div class="shadow"></div>
+  <div class="label">Curtis</div>
+  <div class="status" id="status">scanning BDEX pools...</div>
+
+  <script>
+    (function() {
+      const curtis = document.getElementById('curtis');
+      const leftEye = document.getElementById('eye-left');
+      const rightEye = document.getElementById('eye-right');
+      const status = document.getElementById('status');
+
+      const statuses = [
+        'scanning BDEX pools...',
+        'calculating IL risk...',
+        'optimizing yield...',
+        'watching guardrails...',
+        'ready to protect'
+      ];
+      let statusIdx = 0;
+      setInterval(() => {
+        statusIdx = (statusIdx + 1) % statuses.length;
+        status.textContent = statuses[statusIdx];
+      }, 2500);
+
+      function updateEyes(e) {
+        const rect = curtis.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const dx = e.clientX - centerX;
+        const dy = e.clientY - centerY;
+        const angle = Math.atan2(dy, dx);
+        const dist = Math.min(5, Math.sqrt(dx*dx + dy*dy) / 25);
+        const px = Math.cos(angle) * dist;
+        const py = Math.sin(angle) * dist;
+        leftEye.style.transform = `translate(${px}px, ${py}px)`;
+        rightEye.style.transform = `translate(${px}px, ${py}px)`;
+      }
+
+      document.addEventListener('mousemove', updateEyes);
+
+      curtis.addEventListener('click', function(e) {
+        curtis.classList.add('reacting');
+        status.textContent = 'executing strategy!';
+
+        for (let i = 0; i < 8; i++) {
+          const sp = document.createElement('div');
+          sp.className = 'sparkle active';
+          const angle = (Math.PI * 2 * i) / 8;
+          const dist = 45 + Math.random() * 15;
+          sp.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+          sp.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
+          sp.style.left = '50%';
+          sp.style.top = '50%';
+          curtis.querySelector('.sphere').appendChild(sp);
+          setTimeout(() => sp.remove(), 600);
+        }
+
+        setTimeout(() => {
+          curtis.classList.remove('reacting');
+          status.textContent = 'strategy executed';
+        }, 600);
+      });
+    })();
+  </script>
+</body>
+</html>
