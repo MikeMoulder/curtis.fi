@@ -1,285 +1,336 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
-
-const COLUMNS = 56;
-/** Half-width of the concentrated band, in normalised price units (0..1). */
-const BAND = 0.13;
+import { SectionRule } from "@/components/ui/SectionRule";
 
 /**
- * The trade-off at the centre of the product, shown rather than described.
+ * WIDTH IS THE WHOLE PROBLEM — section study.
  *
- * Two identical amounts of capital sit in the same pool. The top row spreads
- * across every price; the bottom concentrates into a narrow band. Drag the
- * price and watch what each earns — the concentrated row earns many times more
- * while price is inside it, and exactly nothing once price leaves.
+ * The diagram's one idea: capital is drawn as AREA, so both bands enclose the
+ * same number of square units. Halve the width and the bar must get twice as
+ * tall to hold the same money — and that height is liquidity depth, which is
+ * what actually earns fees. The geometry is not a metaphor for how V3 works,
+ * it is how V3 works, which is why this is worth drawing rather than asserting
+ * in a paragraph.
  *
- * This replaces what would otherwise be three paragraphs and a diagram nobody
- * reads. The interaction *is* the argument.
+ * Both bands share one price axis so the comparison cannot cheat, and the
+ * hatching thickens with depth for the same reason.
+ *
+ * Capital efficiency is the standard V3 result for a range [Pa, Pb] around P:
+ *
+ *     E = 1 / (1 − (Pa/Pb)^¼)
+ *
+ * ±20.00% → 10.4×.  ±4.50% → 44.9×.  Both computed below, not rounded by hand,
+ * and both true only while price is inside the band — which is the entire
+ * catch, and the reason the rest of this product exists.
  */
+
+const W = 1000;
+const H = 470;
+const PAD = 66;
+
+/** The axis spans ±26%, so a ±20% band does not run to the sheet edge. */
+const SPAN = 26;
+
+const WIDE = 20;
+const NARROW = 4.5;
+
+/** Equal-area constant, in px². Sets both bar heights from their own widths. */
+const AREA = 19_800;
+
+const px = (pct: number) => (pct / SPAN) * (W / 2 - PAD);
+const x = (pct: number) => W / 2 + px(pct);
+
+/** E = 1 / (1 − (Pa/Pb)^¼) */
+function efficiency(halfPct: number): number {
+  const ratio = (1 - halfPct / 100) / (1 + halfPct / 100);
+  return 1 / (1 - Math.pow(ratio, 0.25));
+}
+
+const Y_AXIS = 400;
+const ROW_1 = 150; // baseline of the wide bar
+const ROW_2 = 356; // baseline of the narrow bar
+
 export function ConcentrationStudy() {
-  const [price, setPrice] = useState(0.5);
-  const [dragging, setDragging] = useState(false);
-  const [touched, setTouched] = useState(false);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const raf = useRef<number | null>(null);
-  const t = useRef(0);
+  const wideW = px(WIDE) * 2;
+  const narrowW = px(NARROW) * 2;
+  const wideH = AREA / wideW;
+  const narrowH = AREA / narrowW;
 
-  /* Drifts on its own until the reader takes over, then stays where they put
-     it. An animation that fights the user is worse than none. */
-  useEffect(() => {
-    if (touched) return;
-    const loop = () => {
-      t.current += 0.0045;
-      setPrice(0.5 + Math.sin(t.current) * 0.30);
-      raf.current = requestAnimationFrame(loop);
-    };
-    raf.current = requestAnimationFrame(loop);
-    return () => {
-      if (raf.current !== null) cancelAnimationFrame(raf.current);
-    };
-  }, [touched]);
-
-  const setFromPointer = useCallback((clientX: number) => {
-    const el = trackRef.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    setPrice(Math.min(1, Math.max(0, (clientX - r.left) / r.width)));
-  }, []);
-
-  useEffect(() => {
-    if (!dragging) return;
-    const move = (e: PointerEvent) => setFromPointer(e.clientX);
-    const up = () => setDragging(false);
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-    return () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-    };
-  }, [dragging, setFromPointer]);
-
-  const inBand = Math.abs(price - 0.5) < BAND;
-
-  // Fee share is proportional to the depth sitting at the current price.
-  // Concentrating into 26% of the range multiplies depth by ~1/0.26.
-  const concentratedShare = inBand ? 1 / (BAND * 2) : 0;
+  const eWide = efficiency(WIDE);
+  const eNarrow = efficiency(NARROW);
 
   return (
-    <div className="glass rounded-3xl p-6 sm:p-9">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <div className="label">Interactive</div>
-          <h3 className="display mt-3 text-[30px] sm:text-[38px]">
-            The same capital,
-            <br />
-            placed two ways
-          </h3>
-        </div>
-        <p className="max-w-[290px] text-[13px] leading-relaxed text-[var(--color-lo)]">
-          Drag the price marker. Watch what each position earns as the market
-          moves away from where it started.
-        </p>
-      </div>
+    <div>
+      <SectionRule
+        title="Width is the whole problem"
+        aside="Section study · equal capital"
+      />
 
-      <div className="mt-10 space-y-9">
-        <Row
-          title="Spread across every price"
-          caption="Always earning. Barely earning."
-          columns={flatProfile()}
-          price={price}
-          active
-          tone="neutral"
-          yieldLabel="1×"
-          yieldNote="baseline"
-        />
-
-        <Row
-          title="Concentrated near the price"
-          caption={
-            inBand
-              ? "Earning several times more from identical capital"
-              : "Price has left the band. This position earns nothing"
-          }
-          columns={concentratedProfile()}
-          price={price}
-          active={inBand}
-          tone={inBand ? "good" : "bad"}
-          yieldLabel={inBand ? `${concentratedShare.toFixed(1)}×` : "0×"}
-          yieldNote={inBand ? "while in range" : "out of range"}
-        />
-      </div>
-
-      {/* the shared price axis — one marker drives both rows */}
-      <div className="mt-9">
-        <div
-          ref={trackRef}
-          onPointerDown={(e) => {
-            setTouched(true);
-            setDragging(true);
-            setFromPointer(e.clientX);
-          }}
-          className="relative h-11 cursor-ew-resize touch-none select-none"
-          role="slider"
-          aria-label="Market price"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(price * 100)}
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-              e.preventDefault();
-              setTouched(true);
-              setPrice((p) =>
-                Math.min(1, Math.max(0, p + (e.key === "ArrowRight" ? 0.03 : -0.03)))
-              );
-            }
-          }}
-        >
-          <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-white/12" />
-
-          {/* ticks */}
-          {Array.from({ length: 9 }).map((_, i) => (
-            <div
-              key={i}
-              className="absolute top-1/2 h-1.5 w-px -translate-y-1/2 bg-white/12"
-              style={{ left: `${(i / 8) * 100}%` }}
-            />
-          ))}
-
-          <div
-            className="absolute top-0 bottom-0 will-change-transform"
-            style={{ left: `${price * 100}%` }}
+      <div className="mt-8 grid gap-x-14 gap-y-10 lg:grid-cols-[1.35fr_0.65fr]">
+        <figure>
+          <svg
+            viewBox={`0 0 ${W} ${H}`}
+            className="w-full"
+            role="img"
+            aria-label={`Two liquidity bands drawn to equal area on one price axis. A wide band of plus or minus ${WIDE} percent is shallow and spans most of the axis, giving ${eWide.toFixed(
+              1
+            )} times the depth of a full-range position. A narrow band of plus or minus ${NARROW} percent is ${(
+              narrowH / wideH
+            ).toFixed(1)} times deeper but covers a fraction of the axis, giving ${eNarrow.toFixed(
+              1
+            )} times.`}
           >
-            <div className="absolute top-1/2 left-1/2 size-4 -translate-x-1/2 -translate-y-1/2">
-              <span
-                className="absolute inset-0 rounded-full border transition-colors duration-300"
-                style={{
-                  borderColor: inBand ? "var(--color-good)" : "var(--color-bad)",
-                  background: "var(--color-void)",
-                  boxShadow: `0 0 16px 2px ${
-                    inBand ? "rgb(74 222 128 / 0.5)" : "rgb(251 113 133 / 0.5)"
-                  }`,
-                }}
-              />
-              <span
-                className="absolute inset-[5px] rounded-full transition-colors duration-300"
-                style={{ background: inBand ? "var(--color-good)" : "var(--color-bad)" }}
-              />
-            </div>
-          </div>
-        </div>
+            <defs>
+              <pattern id="cs-sparse" width="9" height="9" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+                <line x1="0" y1="0" x2="0" y2="9" stroke="var(--color-prussian)" strokeWidth="0.9" strokeOpacity="0.34" />
+              </pattern>
+              <pattern id="cs-dense" width="3.2" height="3.2" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+                <line x1="0" y1="0" x2="0" y2="3.2" stroke="var(--color-prussian)" strokeWidth="0.9" strokeOpacity="0.5" />
+              </pattern>
+            </defs>
 
-        <div className="mt-1 flex items-center justify-between">
-          <span className="label">Lower</span>
-          <span className="label">{dragging || touched ? "Market price" : "Drag me"}</span>
-          <span className="label">Higher</span>
+            {/* ── centre datum, running the full height ────────────────── */}
+            <line
+              x1={W / 2}
+              y1={40}
+              x2={W / 2}
+              y2={Y_AXIS + 16}
+              stroke="var(--color-oxide)"
+              strokeWidth="1.1"
+              strokeDasharray="7 4"
+              strokeOpacity="0.65"
+            />
+
+            {/* ── row 1: the wide band ─────────────────────────────────── */}
+            <Bar
+              y={ROW_1}
+              height={wideH}
+              left={x(-WIDE)}
+              right={x(WIDE)}
+              fill="url(#cs-sparse)"
+            />
+            <DepthDim
+              x={x(-WIDE)}
+              yTop={ROW_1 - wideH}
+              yBot={ROW_1}
+              label={`${eWide.toFixed(1)}×`}
+            />
+            <WidthDim
+              y={ROW_1 + 26}
+              left={x(-WIDE)}
+              right={x(WIDE)}
+              label={`±${WIDE.toFixed(2)}%`}
+            />
+            <text x={PAD - 46} y={ROW_1 - wideH - 14} className="label" fontSize="9" fill="var(--color-ink-3)">
+              WIDE
+            </text>
+
+            {/* ── row 2: the narrow band ───────────────────────────────── */}
+            <Bar
+              y={ROW_2}
+              height={narrowH}
+              left={x(-NARROW)}
+              right={x(NARROW)}
+              fill="url(#cs-dense)"
+            />
+            <DepthDim
+              x={x(-NARROW)}
+              yTop={ROW_2 - narrowH}
+              yBot={ROW_2}
+              label={`${eNarrow.toFixed(1)}×`}
+            />
+            <WidthDim
+              y={ROW_2 + 26}
+              left={x(-NARROW)}
+              right={x(NARROW)}
+              label={`±${NARROW.toFixed(2)}%`}
+            />
+            <text x={PAD - 46} y={ROW_2 - narrowH - 14} className="label" fontSize="9" fill="var(--color-ink-3)">
+              NARROW
+            </text>
+
+            {/* ── the shared price axis ────────────────────────────────── */}
+            <line x1={PAD - 26} y1={Y_AXIS} x2={W - PAD + 26} y2={Y_AXIS} stroke="var(--color-ink)" strokeWidth="1.2" />
+            {Array.from({ length: 27 }, (_, i) => i - 13).map((step) => {
+              const pct = step * 2;
+              if (Math.abs(pct) > SPAN) return null;
+              const major = step % 5 === 0;
+              return (
+                <g key={step}>
+                  <line
+                    x1={x(pct)}
+                    y1={Y_AXIS}
+                    x2={x(pct)}
+                    y2={Y_AXIS + (major ? 12 : 6)}
+                    stroke={major ? "var(--color-ink-2)" : "var(--color-ink-4)"}
+                    strokeWidth={major ? 1.2 : 0.8}
+                  />
+                  {major && (
+                    <text
+                      x={x(pct)}
+                      y={Y_AXIS + 28}
+                      textAnchor="middle"
+                      className="meter"
+                      fontSize="10"
+                      fill="var(--color-ink-3)"
+                    >
+                      {pct > 0 ? `+${pct}` : pct}%
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+            <text x={W / 2} y={Y_AXIS + 50} textAnchor="middle" className="label" fontSize="8.5" fill="var(--color-ink-4)">
+              PRICE, RELATIVE TO SPOT
+            </text>
+          </svg>
+        </figure>
+
+        <div className="lg:pt-2">
+          <p className="text-[15px] leading-relaxed text-[var(--color-ink-2)]">
+            Both bars hold the same money. The narrow one is{" "}
+            <strong className="font-normal text-[var(--color-ink)]">
+              {(narrowH / wideH).toFixed(1)}× deeper
+            </strong>{" "}
+            purely because it is {(wideW / narrowW).toFixed(1)}× shorter, and depth
+            is what collects fees.
+          </p>
+
+          {/* The trade-off used to be spelled out in a paragraph here as well as
+              in these two notes. Once is enough. */}
+          <div className="mt-7 border-t border-[var(--color-ink)]">
+            <Row k={`±${WIDE.toFixed(2)}% band`} v={`${eWide.toFixed(1)}× depth`} note="survives a large move, earns little" />
+            <Row k={`±${NARROW.toFixed(2)}% band`} v={`${eNarrow.toFixed(1)}× depth`} note="earns well, leaves the band sooner" measured />
+          </div>
+
+          <p className="mt-6 text-[12.5px] leading-relaxed text-[var(--color-ink-4)]">
+            Depth multiples are relative to a full-range position, from
+            E&nbsp;=&nbsp;1&nbsp;/&nbsp;(1&nbsp;−&nbsp;(P<sub>a</sub>/P<sub>b</sub>)<sup>¼</sup>).
+            Both hold only while price sits inside the band. Choosing the width, and
+            moving it before price leaves, is Curtis&rsquo;s entire job.
+          </p>
         </div>
       </div>
-
-      <div className="rule-fade my-8" />
-
-      <p className="max-w-[640px] text-[13.5px] leading-relaxed text-[var(--color-mid)]">
-        That is the whole job. Concentration multiplies what capital earns and
-        narrows the window in which it earns anything, and the right window
-        moves whenever the price does. Curtis holds the band over the price
-        continuously, and widens it when the market gets rough.
-      </p>
     </div>
   );
 }
 
-/* ── profiles ─────────────────────────────────────────────────────────────── */
+/* ── drawing primitives ──────────────────────────────────────────────────── */
 
-function flatProfile(): number[] {
-  return Array.from({ length: COLUMNS }, () => 0.17);
+function Bar({
+  y,
+  height,
+  left,
+  right,
+  fill,
+}: {
+  y: number;
+  height: number;
+  left: number;
+  right: number;
+  fill: string;
+}) {
+  return (
+    <g>
+      <rect x={left} y={y - height} width={right - left} height={height} fill={fill} />
+      <rect
+        x={left}
+        y={y - height}
+        width={right - left}
+        height={height}
+        fill="none"
+        stroke="var(--color-prussian)"
+        strokeWidth="1.5"
+      />
+    </g>
+  );
 }
 
-function concentratedProfile(): number[] {
-  const centre = (COLUMNS - 1) / 2;
-  const halfCols = BAND * COLUMNS;
-  return Array.from({ length: COLUMNS }, (_, i) => {
-    const d = Math.abs(i - centre);
-    if (d > halfCols) return 0;
-    // Slight dome rather than a flat slab — reads as depth, not a block.
-    return 0.55 + 0.45 * Math.cos((d / halfCols) * (Math.PI / 2));
-  });
+/** Vertical dimension with arrow terminators — the depth callout. */
+function DepthDim({
+  x: xPos,
+  yTop,
+  yBot,
+  label,
+}: {
+  x: number;
+  yTop: number;
+  yBot: number;
+  label: string;
+}) {
+  const dx = xPos - 30;
+  return (
+    <g>
+      <line x1={dx} y1={yTop} x2={dx} y2={yBot} stroke="var(--color-ink-3)" strokeWidth="0.9" />
+      <path d={`M ${dx} ${yTop} l -3.2 9 h 6.4 z`} fill="var(--color-ink-3)" />
+      <path d={`M ${dx} ${yBot} l -3.2 -9 h 6.4 z`} fill="var(--color-ink-3)" />
+      {/* extension lines, gapped from the object per convention */}
+      <line x1={dx - 6} y1={yTop} x2={xPos - 5} y2={yTop} stroke="var(--hair-2)" strokeWidth="0.8" />
+      <line x1={dx - 6} y1={yBot} x2={xPos - 5} y2={yBot} stroke="var(--hair-2)" strokeWidth="0.8" />
+      <text
+        x={dx - 10}
+        y={(yTop + yBot) / 2 + 4}
+        textAnchor="end"
+        className="meter"
+        fontSize="14"
+        fill="var(--color-ink)"
+      >
+        {label}
+      </text>
+    </g>
+  );
 }
 
-/* ── one row ──────────────────────────────────────────────────────────────── */
+/** Horizontal dimension with the figure breaking the line. */
+function WidthDim({
+  y,
+  left,
+  right,
+  label,
+}: {
+  y: number;
+  left: number;
+  right: number;
+  label: string;
+}) {
+  const mid = (left + right) / 2;
+  return (
+    <g>
+      <line x1={left} y1={y} x2={right} y2={y} stroke="var(--color-ink-3)" strokeWidth="0.9" />
+      <path d={`M ${left} ${y} l 9 -3.2 v 6.4 z`} fill="var(--color-ink-3)" />
+      <path d={`M ${right} ${y} l -9 -3.2 v 6.4 z`} fill="var(--color-ink-3)" />
+      <rect x={mid - 42} y={y - 9} width="84" height="18" fill="var(--color-film)" />
+      <text x={mid} y={y + 4} textAnchor="middle" className="meter" fontSize="12.5" fill="var(--color-ink)">
+        {label}
+      </text>
+    </g>
+  );
+}
 
 function Row({
-  title,
-  caption,
-  columns,
-  price,
-  active,
-  tone,
-  yieldLabel,
-  yieldNote,
+  k,
+  v,
+  note,
+  measured = false,
 }: {
-  title: string;
-  caption: string;
-  columns: number[];
-  price: number;
-  active: boolean;
-  tone: "neutral" | "good" | "bad";
-  yieldLabel: string;
-  yieldNote: string;
+  k: string;
+  v: string;
+  note: string;
+  measured?: boolean;
 }) {
-  const priceCol = Math.round(price * (COLUMNS - 1));
-
-  const COLOR =
-    tone === "good"
-      ? "var(--color-good)"
-      : tone === "bad"
-        ? "var(--color-bad)"
-        : "var(--color-accent-dim)";
-
   return (
-    <div>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h4 className="text-[14px] font-medium text-[var(--color-ink)]">{title}</h4>
-        <div className="flex items-baseline gap-2">
-          <span
-            className="tabular text-[19px] font-semibold transition-colors duration-300"
-            style={{ color: active ? COLOR : "var(--color-faint)" }}
-          >
-            {yieldLabel}
-          </span>
-          <span className="label">{yieldNote}</span>
-        </div>
+    <div className="flex items-baseline justify-between gap-4 border-b border-[var(--hair)] py-3">
+      <div>
+        <div className="meter text-[12.5px] text-[var(--color-ink)]">{k}</div>
+        <div className="mt-1 text-[12px] text-[var(--color-ink-3)]">{note}</div>
       </div>
-
-      <div className="mt-3 flex h-[76px] items-end gap-[2px]">
-        {columns.map((h, i) => {
-          const isHere = i === priceCol;
-          const lit = h > 0 && Math.abs(i - priceCol) <= 1;
-          return (
-            <div
-              key={i}
-              className="flex-1 rounded-t-[2px] transition-all duration-300"
-              style={{
-                height: `${Math.max(h * 100, 1.5)}%`,
-                background:
-                  h === 0
-                    ? "rgb(255 255 255 / 0.045)"
-                    : lit
-                      ? COLOR
-                      : `color-mix(in srgb, ${COLOR} ${active ? 42 : 20}%, transparent)`,
-                boxShadow: isHere && h > 0 ? `0 0 14px 1px ${COLOR}` : undefined,
-              }}
-            />
-          );
-        })}
-      </div>
-
-      <p
-        className="mt-3 text-[12.5px] transition-colors duration-300"
-        style={{ color: active ? "var(--color-mid)" : "var(--color-faint)" }}
+      <div
+        className={`meter shrink-0 text-[15px] ${
+          measured ? "text-[var(--color-oxide)]" : "text-[var(--color-ink-2)]"
+        }`}
       >
-        {caption}
-      </p>
+        {v}
+      </div>
     </div>
   );
 }

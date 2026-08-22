@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -8,8 +9,8 @@ import { Button } from "@/components/ui/Button";
 import { Pill } from "@/components/ui/Pill";
 import { Address } from "@/components/ui/Address";
 import { Reveal } from "@/components/ui/Reveal";
-import { Curtis, CURTIS_STATUS, type CurtisState } from "@/components/curtis/Curtis";
-import { RangeBand } from "@/components/position/RangeBand";
+import { Curtis, type CurtisState } from "@/components/curtis/Curtis";
+import { RangeBand, rangeStatus, TONE } from "@/components/position/RangeBand";
 import { RunCurtis } from "@/components/agent/RunCurtis";
 import { VaultActions } from "@/components/vault/VaultActions";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
@@ -24,6 +25,7 @@ import {
   useGuardrails,
   useVaultMeta,
   usePoolSpot,
+  type Guardrails,
 } from "@/lib/hooks/useCurtis";
 
 export default function DashboardPage() {
@@ -33,7 +35,7 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
-      <main className="mx-auto max-w-[1240px] px-6 pt-32 pb-24 w-full">
+      <main className="sheet w-full grow pt-16 pb-24">
         {!isConnected ? (
           <Gate
             title="Connect to begin"
@@ -91,7 +93,15 @@ function CreateVault({ onCreated }: { onCreated: () => void }) {
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: confirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
-  if (isSuccess) setTimeout(onCreated, 300);
+  // This was a bare `if (isSuccess) setTimeout(onCreated, 300)` in the render
+  // body — a side effect fired on every re-render while the receipt stayed
+  // cached, which under React's double-invoked renders queued the refetch more
+  // than once. An effect keyed on the flag fires it exactly on the transition.
+  useEffect(() => {
+    if (!isSuccess) return;
+    const t = window.setTimeout(onCreated, 300);
+    return () => clearTimeout(t);
+  }, [isSuccess, onCreated]);
 
   const busy = isPending || confirming;
 
@@ -114,7 +124,7 @@ function CreateVault({ onCreated }: { onCreated: () => void }) {
   };
 
   return (
-    <div className="mx-auto max-w-[880px]">
+    <div className="mx-auto max-w-[900px]">
       <Reveal className="flex flex-col items-center text-center">
         <Curtis size={116} state={busy ? "acting" : "idle"} />
         <div className="label mt-12">Step one</div>
@@ -130,28 +140,39 @@ function CreateVault({ onCreated }: { onCreated: () => void }) {
       </Reveal>
 
       <Reveal delay={100}>
-        <div className="mt-14 grid gap-3 sm:grid-cols-3">
+        {/* Ruled cells sharing their borders, rather than three floating cards.
+            The selected one is stated the way a drawing states a selection: a
+            heavier border, a filled datum square, and a darker field — none of
+            which depend on the translucent white fills the previous version
+            used, which were invisible on this film. */}
+        <div className="mt-14 grid border border-[var(--hair-2)] sm:grid-cols-3">
           {PRESETS.map((p) => {
             const active = p.id === preset.id;
             return (
               <button
                 key={p.id}
                 onClick={() => setPreset(p)}
-                className={`rounded-2xl border p-5 text-left transition-all duration-300 ${
+                aria-pressed={active}
+                className={`p-5 text-left transition-colors duration-300 not-last:border-b not-last:border-[var(--hair-2)] sm:not-last:border-b-0 sm:not-last:border-r ${
                   active
-                    ? "border-white/25 bg-white/[0.07] shadow-[0_18px_50px_-24px_rgba(255,255,255,0.35)]"
-                    : "glass-quiet hover:border-white/15"
+                    ? "bg-[var(--color-film-3)] shadow-[inset_0_0_0_1px_var(--color-ink)]"
+                    : "hover:bg-[var(--color-film-3)]/60"
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-[15px] font-medium">{p.name}</span>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="head text-[15px]">{p.name}</span>
                   <span
-                    className={`size-1.5 rounded-full transition-colors ${
-                      active ? "bg-[var(--color-ink)]" : "bg-transparent"
+                    className={`size-2 shrink-0 border transition-colors ${
+                      active
+                        ? "border-[var(--color-oxide)] bg-[var(--color-oxide)]"
+                        : "border-[var(--hair-2)] bg-transparent"
                     }`}
+                    aria-hidden="true"
                   />
                 </div>
-                <div className="mt-1.5 text-[12.5px] text-[var(--color-lo)]">{p.summary}</div>
+                <div className="mt-2 text-[12.5px] leading-relaxed text-[var(--color-ink-3)]">
+                  {p.summary}
+                </div>
 
                 <div className="rule my-4" />
 
@@ -167,14 +188,14 @@ function CreateVault({ onCreated }: { onCreated: () => void }) {
       </Reveal>
 
       <Reveal delay={160}>
-        <p className="mt-8 text-center text-[13.5px] leading-relaxed text-[var(--color-mid)]">
+        <p className="mx-auto mt-8 max-w-[62ch] text-center text-[13.5px] leading-relaxed text-[var(--color-ink-2)]">
           {preset.detail}
         </p>
       </Reveal>
 
       {error && (
-        <div className="mt-8 rounded-2xl border border-[var(--color-bad)]/25 bg-[var(--color-bad)]/[0.06] px-5 py-4">
-          <p className="text-[12.5px] leading-relaxed text-[var(--color-bad)]">
+        <div className="mt-8 border-l-2 border-[var(--color-oxide)] bg-[var(--color-oxide-bg)] px-5 py-4">
+          <p className="text-[12.5px] leading-relaxed text-[var(--color-oxide)]">
             {error.message.split("\n")[0]}
           </p>
         </div>
@@ -189,7 +210,7 @@ function CreateVault({ onCreated }: { onCreated: () => void }) {
             href={explorerTx(hash)}
             target="_blank"
             rel="noopener noreferrer"
-            className="tabular text-[12px] text-[var(--color-lo)] underline-offset-4 hover:text-[var(--color-accent)] hover:underline"
+            className="meter text-[12px] text-[var(--color-ink-3)] underline decoration-[var(--hair-2)] underline-offset-[3px] hover:text-[var(--color-oxide)]"
           >
             View transaction
           </a>
@@ -203,13 +224,28 @@ function SpecRow({ k, v }: { k: string; v: string }) {
   return (
     <div className="flex items-baseline justify-between gap-2">
       <dt className="label">{k}</dt>
-      <dd className="tabular text-[12.5px] text-[var(--color-ink)]">{v}</dd>
+      <dd className="meter text-[12.5px] text-[var(--color-ink)]">{v}</dd>
     </div>
   );
 }
 
 /* ── the vault ────────────────────────────────────────────────────────────── */
 
+/**
+ * An operations screen, not a document.
+ *
+ * The previous version answered "how does this work?" by printing the answer:
+ * four titled sections, each opening with a paragraph, and the explanation of
+ * the agent's cycle spelled out in full on the page. Correct information,
+ * unusable layout — the reader had to read three hundred words to find out
+ * whether their position was earning.
+ *
+ * So the page now states the state first and explains only on request. Four
+ * figures across the top answer everything at a glance; the gauge shows where
+ * price sits; the cycle strip is one row of five cells with its narrative folded
+ * into a disclosure; funds and limits sit side by side at the bottom. The full
+ * five-stage account lives on the home page, where a first-time reader is.
+ */
 function VaultView({ vault }: { vault: `0x${string}` }) {
   const { info, refetch: refetchPosition } = usePositionInfo(vault);
   const { guardrails } = useGuardrails(vault);
@@ -218,6 +254,11 @@ function VaultView({ vault }: { vault: `0x${string}` }) {
 
   const spotTick = info?.spotTick ?? spot;
   const hasPosition = info?.hasPosition ?? false;
+  const live = hasPosition && info && spotTick !== null ? info : null;
+
+  const status = live && spotTick !== null
+    ? rangeStatus(spotTick, live.tickLower, live.tickUpper)
+    : null;
 
   const curtisState: CurtisState = meta.paused
     ? "alert"
@@ -227,202 +268,222 @@ function VaultView({ vault }: { vault: `0x${string}` }) {
         : "alert"
       : "scanning";
 
+  const headroom =
+    live && spotTick !== null
+      ? status === "outrange"
+        ? "past it"
+        : `${((1 - drift(spotTick, live.tickLower, live.tickUpper)) * 100).toFixed(0)}%`
+      : "–";
+
   return (
     <div>
-      {/* ── masthead ── */}
+      {/* ── masthead: who, what state, and the way out to history ────────── */}
       <Reveal>
-        <div className="flex flex-wrap items-end justify-between gap-8">
-          <div className="flex items-center gap-6">
-            <Curtis size={72} state={curtisState} interactive={false} />
+        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-5">
+          <div className="flex items-center gap-5">
+            <Curtis size={58} state={curtisState} interactive={false} />
             <div>
-              <div className="label">
-                {meta.paused ? "Paused by you" : CURTIS_STATUS[curtisState]}
+              <h1 className="display text-[clamp(26px,3.4vw,40px)]">Your vault</h1>
+              <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
+                {meta.paused ? (
+                  <Pill tone="drifting" dot>
+                    Paused
+                  </Pill>
+                ) : (
+                  <Pill tone="inrange" dot pulse>
+                    Active
+                  </Pill>
+                )}
+                <span className="label">USDT / WBOT · {POOL_META.feeLabel}</span>
+                <Address value={vault} />
               </div>
-              <h1 className="display mt-3 text-[clamp(30px,4vw,48px)]">Your vault</h1>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-10 gap-y-4">
-            <Meta label="Vault">
-              <Address value={vault} />
-            </Meta>
-            <Meta label="Agent">
-              {meta.agent ? <Address value={meta.agent} /> : <span>–</span>}
-            </Meta>
-            <Meta label="Status">
-              {meta.paused ? (
-                <Pill tone="drifting" dot>
-                  Paused
-                </Pill>
-              ) : (
-                <Pill tone="inrange" dot pulse>
-                  Active
-                </Pill>
-              )}
-            </Meta>
-          </div>
+          <Link
+            href="/activity"
+            className="label group inline-flex items-center gap-2 border border-[var(--hair-2)] px-4 py-2.5 transition-colors hover:border-[var(--color-ink)] hover:!text-[var(--color-ink)]"
+          >
+            Decision log
+            <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+          </Link>
         </div>
       </Reveal>
 
-      <div className="rule-fade my-10" />
-
+      {/* ── the state, in four figures ───────────────────────────────────── */}
       <Reveal>
-        <RunCurtis vault={vault} onActed={refetchPosition} />
+        <dl className="mt-10 grid gap-px border-y border-[var(--color-ink)] bg-[var(--hair-2)] sm:grid-cols-2 lg:grid-cols-4">
+          <Stat
+            k="WBOT price"
+            v={spotTick === null ? "–" : `$${formatPrice(tickToWbotPrice(spotTick))}`}
+            note={spotTick === null ? "reading pool" : `tick ${spotTick.toLocaleString()}`}
+          />
+          <Stat
+            k="Band"
+            v={live ? widthLabel(live.tickUpper - live.tickLower) : "none"}
+            note={
+              live
+                ? `$${formatPrice(tickToWbotPrice(live.tickUpper))} – $${formatPrice(
+                    tickToWbotPrice(live.tickLower)
+                  )}`
+                : "no position open"
+            }
+          />
+          <Stat
+            k="Room before it stops earning"
+            v={headroom}
+            tone={status ? TONE[status].text : undefined}
+            note={live ? "of the distance to the nearer edge" : "opens on the next cycle"}
+          />
+          <Stat
+            k="Moves left today"
+            v={meta.rebalancesRemaining?.toString() ?? "–"}
+            note={
+              guardrails
+                ? `of ${guardrails.maxRebalancesPerDay}, rolling 24 hours`
+                : "rolling 24 hours"
+            }
+          />
+        </dl>
       </Reveal>
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-[1.4fr_1fr]">
-        {/* ── position ── */}
+      {/* ── where the price sits ─────────────────────────────────────────── */}
+      <Reveal>
+        <div className="plate mt-10 px-5 py-6 sm:px-6">
+          {live && spotTick !== null ? (
+            <RangeBand
+              tickLower={live.tickLower}
+              tickUpper={live.tickUpper}
+              spotTick={spotTick}
+            />
+          ) : (
+            <div className="py-10 text-center">
+              <p className="head text-[16px]">No position open</p>
+              <p className="mx-auto mt-3 max-w-[44ch] text-[13px] leading-relaxed text-[var(--color-ink-3)]">
+                Deposit below, then run a cycle — Curtis opens a range around the
+                current price.
+              </p>
+            </div>
+          )}
+        </div>
+      </Reveal>
+
+      {/* ── the action ───────────────────────────────────────────────────── */}
+      <Reveal>
+        <div className="mt-10">
+          <RunCurtis vault={vault} onActed={refetchPosition} />
+        </div>
+      </Reveal>
+
+      {/* ── funds and limits, side by side ───────────────────────────────── */}
+      <div className="mt-10 grid gap-8 lg:grid-cols-[1.2fr_1fr] lg:items-start">
         <Reveal>
-          <div className="glass h-full rounded-3xl p-7">
-            <div className="flex items-baseline justify-between gap-4">
-              <div>
-                <div className="label">Position</div>
-                <h2 className="mt-2.5 text-[16px] font-medium">
-                  USDT / WBOT
-                  <span className="ml-2 text-[var(--color-lo)]">{POOL_META.feeLabel}</span>
-                </h2>
-              </div>
-              {meta.tokenId && meta.tokenId > 0n && (
-                <span className="tabular text-[11.5px] text-[var(--color-faint)]">
-                  NFT #{meta.tokenId.toString()}
-                </span>
-              )}
-            </div>
-
-            <div className="mt-8">
-              {hasPosition && info && spotTick !== null ? (
-                <>
-                  <RangeBand
-                    tickLower={info.tickLower}
-                    tickUpper={info.tickUpper}
-                    spotTick={spotTick}
-                  />
-
-                  <div className="rule my-8" />
-
-                  <div className="grid grid-cols-3 gap-6">
-                    <Figure
-                      label="Band width"
-                      value={widthLabel(info.tickUpper - info.tickLower)}
-                    />
-                    <Figure
-                      label="Drift to edge"
-                      value={`${(drift(spotTick, info.tickLower, info.tickUpper) * 100).toFixed(0)}%`}
-                      warn={drift(spotTick, info.tickLower, info.tickUpper) > 0.7}
-                    />
-                    <Figure
-                      label="Moves left"
-                      value={meta.rebalancesRemaining?.toString() ?? "–"}
-                    />
-                  </div>
-                </>
-              ) : (
-                <div className="py-10 text-center">
-                  <p className="text-[15px] text-[var(--color-ink)]">No position open</p>
-                  <p className="mx-auto mt-3 max-w-[340px] text-[13.5px] leading-relaxed text-[var(--color-lo)]">
-                    Deposit USDT or WBOT and Curtis will open a range on his next pass.
-                  </p>
-                  {spotTick !== null && (
-                    <p className="tabular mt-7 text-[12px] text-[var(--color-faint)]">
-                      WBOT ${formatPrice(tickToWbotPrice(spotTick))} · tick{" "}
-                      {spotTick.toLocaleString()}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
+          <VaultActions vault={vault} onChanged={refetchPosition} />
         </Reveal>
-
-        {/* ── limits ── */}
-        <Reveal delay={80}>
-          <div className="glass h-full rounded-3xl p-7">
-            <div className="label">Limits</div>
-            <h2 className="mt-2.5 text-[16px] font-medium">Enforced by the vault</h2>
-
-            <div className="mt-7 space-y-5">
-              {guardrails ? (
-                <>
-                  <LimitRow
-                    k="Narrowest range"
-                    v={widthLabel(guardrails.minRangeWidth)}
-                    why="Stops concentration becoming churn"
-                  />
-                  <LimitRow
-                    k="Widest range"
-                    v={widthLabel(guardrails.maxRangeWidth)}
-                    why="Stops full-width passing as management"
-                  />
-                  <LimitRow
-                    k="Moves per day"
-                    v={String(guardrails.maxRebalancesPerDay)}
-                    why="Caps gas burn"
-                  />
-                  <LimitRow
-                    k="Centred within"
-                    v={widthLabel(guardrails.maxCentreOffset * 2)}
-                    why="Ranges must track price"
-                  />
-
-                  <div className="rule !mt-7" />
-
-                  <p className="text-[12px] leading-relaxed text-[var(--color-faint)]">
-                    Curtis holds two powers, re-range and compound, and neither can
-                    move a token out of this vault. Only you can withdraw, and
-                    withdrawal works even while paused.
-                  </p>
-                </>
-              ) : (
-                <div className="text-[13px] text-[var(--color-lo)]">Loading…</div>
-              )}
-            </div>
-          </div>
+        <Reveal delay={60}>
+          <Limits guardrails={guardrails} agent={meta.agent} tokenId={meta.tokenId} />
         </Reveal>
       </div>
-
-      <Reveal delay={120}>
-        <div className="mt-5">
-          <VaultActions vault={vault} onChanged={refetchPosition} />
-        </div>
-      </Reveal>
     </div>
   );
 }
 
 /* ── pieces ───────────────────────────────────────────────────────────────── */
 
-function Meta({ label, children }: { label: string; children: React.ReactNode }) {
+/**
+ * One cell of the status strip. The rules between cells are the container's
+ * background showing through a 1px grid gap, which is the only way to get a
+ * clean lattice at every breakpoint without per-cell border arithmetic.
+ */
+function Stat({
+  k,
+  v,
+  note,
+  tone,
+}: {
+  k: string;
+  v: string;
+  note?: string;
+  tone?: string;
+}) {
   return (
-    <div>
-      <div className="label">{label}</div>
-      <div className="mt-2">{children}</div>
+    <div className="bg-[var(--color-film)] px-5 py-4">
+      <dt className="label">{k}</dt>
+      <dd>
+        <div
+          className={`meter mt-2.5 text-[clamp(20px,2vw,26px)] leading-none ${
+            tone ?? "text-[var(--color-ink)]"
+          }`}
+        >
+          {v}
+        </div>
+        {note && (
+          <div className="mt-2 text-[11.5px] leading-snug text-[var(--color-ink-4)]">{note}</div>
+        )}
+      </dd>
     </div>
   );
 }
 
-function Figure({ label, value, warn = false }: { label: string; value: string; warn?: boolean }) {
+/**
+ * The bounds, as a spec sheet. Four numbers and the address that is allowed to
+ * act inside them — no argument for why they exist, because the home page makes
+ * that argument at length and this reader has already accepted it.
+ */
+function Limits({
+  guardrails,
+  agent,
+  tokenId,
+}: {
+  guardrails: Guardrails | null;
+  agent?: `0x${string}`;
+  tokenId?: bigint;
+}) {
   return (
-    <div>
-      <div className="label">{label}</div>
-      <div
-        className={`tabular mt-2.5 text-[22px] leading-none font-medium ${
-          warn ? "text-[var(--color-warn)]" : "text-[var(--color-ink)]"
-        }`}
-      >
-        {value}
+    <section className="plate">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 border-b border-[var(--color-ink)] px-6 py-5">
+        <h2 className="head text-[17px]">Limits</h2>
+        <span className="label">Enforced in the contract</span>
       </div>
-    </div>
+
+      <div className="px-6 py-2">
+        {guardrails ? (
+          <>
+            <LimitRow k="Narrowest range" v={widthLabel(guardrails.minRangeWidth)} />
+            <LimitRow k="Widest range" v={widthLabel(guardrails.maxRangeWidth)} />
+            <LimitRow k="Moves per day" v={String(guardrails.maxRebalancesPerDay)} />
+            <LimitRow k="Centred within" v={widthLabel(guardrails.maxCentreOffset * 2)} />
+          </>
+        ) : (
+          <div className="py-5 text-[13px] text-[var(--color-ink-3)]">Loading…</div>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-3 border-t border-[var(--hair-2)] px-6 py-4">
+        <span className="flex items-baseline gap-2.5">
+          <span className="label">Agent</span>
+          {agent ? (
+            <Address value={agent} />
+          ) : (
+            <span className="meter text-[12px] text-[var(--color-ink-4)]">–</span>
+          )}
+        </span>
+        <span className="flex items-baseline gap-2.5">
+          <span className="label">Position</span>
+          <span className="meter text-[12px] text-[var(--color-ink-2)]">
+            {tokenId && tokenId > 0n ? `#${tokenId.toString()}` : "–"}
+          </span>
+        </span>
+      </div>
+    </section>
   );
 }
 
-function LimitRow({ k, v, why }: { k: string; v: string; why: string }) {
+function LimitRow({ k, v }: { k: string; v: string }) {
   return (
-    <div className="flex items-start justify-between gap-5">
-      <div className="min-w-0">
-        <div className="text-[13.5px] text-[var(--color-ink)]">{k}</div>
-        <div className="mt-0.5 text-[11.5px] text-[var(--color-faint)]">{why}</div>
-      </div>
-      <div className="tabular shrink-0 text-[13.5px] text-[var(--color-accent)]">{v}</div>
+    <div className="flex items-baseline justify-between gap-6 border-b border-[var(--hair)] py-3.5 last:border-b-0">
+      <span className="text-[13.5px] text-[var(--color-ink-2)]">{k}</span>
+      <span className="meter shrink-0 text-[13.5px] text-[var(--color-prussian)]">{v}</span>
     </div>
   );
 }

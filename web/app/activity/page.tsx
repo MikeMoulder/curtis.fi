@@ -21,7 +21,7 @@ export default function ActivityPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
-      <main className="mx-auto max-w-[980px] px-6 pt-32 pb-24 w-full">
+      <main className="sheet w-full grow pt-16 pb-24">
         <Reveal>
           <div className="label">Audit trail</div>
           <h1 className="display mt-5 text-[clamp(34px,5vw,60px)]">
@@ -35,7 +35,7 @@ export default function ActivityPage() {
           </p>
         </Reveal>
 
-        <div className="rule-fade my-12" />
+        <div className="rule-heavy my-12" />
 
         {!isConnected ? (
           <Empty title="Connect a wallet" body="Your vault's history appears here." state="idle">
@@ -66,7 +66,7 @@ export default function ActivityPage() {
             <div className="label mb-6">
               {decisions.length} decision{decisions.length === 1 ? "" : "s"} · newest first
             </div>
-            <div className="glass overflow-hidden rounded-3xl">
+            <div className="plate">
               {decisions.map((d, i) => (
                 <div key={`${d.txHash}-${d.decisionId}`}>
                   {i > 0 && <div className="rule" />}
@@ -97,7 +97,7 @@ function Empty({
     <div className="flex min-h-[40vh] flex-col items-center justify-center text-center">
       <Curtis size={104} state={state} interactive={state === "idle"} />
       <h2 className="display mt-12 text-[28px]">{title}</h2>
-      <p className="mt-4 max-w-[380px] text-[13.5px] leading-relaxed text-[var(--color-lo)]">
+      <p className="mt-4 max-w-[380px] text-[13.5px] leading-relaxed text-[var(--color-ink-3)]">
         {body}
       </p>
       {children && <div className="mt-8">{children}</div>}
@@ -112,7 +112,7 @@ function DecisionRow({ d }: { d: Decision }) {
     <article className="px-6 py-6">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <Pill tone={d.action === "compound" ? "accent" : "inrange"}>{d.action}</Pill>
-        <time className="tabular text-[12px] text-[var(--color-faint)]">
+        <time className="meter text-[12px] text-[var(--color-ink-4)]">
           {when.toLocaleString(undefined, {
             month: "short",
             day: "numeric",
@@ -121,7 +121,7 @@ function DecisionRow({ d }: { d: Decision }) {
           })}
         </time>
         <span className="ml-auto flex items-center gap-4">
-          <span className="tabular text-[12px] text-[var(--color-lo)]">
+          <span className="meter text-[12px] text-[var(--color-ink-3)]">
             {(d.confidenceBps / 100).toFixed(0)}% confident
           </span>
           <Address value={d.txHash} kind="tx" copyable={false} />
@@ -152,7 +152,7 @@ function Detail({ k, v }: { k: string; v: string }) {
   return (
     <span className="flex items-baseline gap-2">
       <span className="label">{k}</span>
-      <span className="tabular text-[12px] text-[var(--color-mid)]">{v}</span>
+      <span className="meter text-[12px] text-[var(--color-ink-2)]">{v}</span>
     </span>
   );
 }

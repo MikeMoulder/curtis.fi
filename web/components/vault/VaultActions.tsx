@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   useAccount,
   useReadContract,
@@ -12,11 +12,17 @@ import { Button } from "@/components/ui/Button";
 import { CurtisVaultAbi } from "@/lib/abis/CurtisVault";
 import { TOKENS } from "@/lib/addresses";
 import { ACTIVE_CHAIN_ID, explorerTx } from "@/lib/chains";
+import { useVaultMeta } from "@/lib/hooks/useCurtis";
 
 type TokenKey = "usdt" | "wbot";
 
 /**
- * Moving funds in and out.
+ * The three things only the owner can do.
+ *
+ * Deposit and withdraw were here already. Pause was not — even though the page
+ * states twice that Curtis can be paused and that withdrawal survives it, which
+ * is a promise with no button behind it. It is the owner's kill switch, so it
+ * belongs on the owner's panel.
  *
  * Deposits need an ERC-20 approval first, so the button states itself as
  * "Approve USDT" until the allowance covers the amount, then becomes "Deposit".
@@ -27,23 +33,28 @@ export function VaultActions({ vault, onChanged }: { vault: Address; onChanged: 
   const [tab, setTab] = useState<"deposit" | "withdraw">("deposit");
 
   return (
-    <div className="glass rounded-3xl p-7">
-      <div className="flex items-center justify-between">
+    <div className="plate">
+      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 border-b border-[var(--color-ink)] px-6 py-5">
         <div>
           <div className="label">Funds</div>
-          <h2 className="mt-2.5 text-[16px] font-medium">
+          <h2 className="head mt-2 text-[17px]">
             {tab === "deposit" ? "Add to your vault" : "Take everything out"}
           </h2>
         </div>
-        <div className="flex rounded-full border border-white/10 bg-white/[0.03] p-0.5">
+
+        {/* Two ruled tabs, not a rounded segmented control. The selected one is
+            filled ink — the same figure/ground inversion the sheet uses
+            everywhere else to mean "this one". */}
+        <div className="flex border border-[var(--hair-2)]">
           {(["deposit", "withdraw"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`rounded-full px-3.5 py-1.5 text-[12px] capitalize transition-colors ${
+              aria-pressed={tab === t}
+              className={`label px-4 py-2.5 transition-colors ${
                 tab === t
-                  ? "bg-[var(--color-ink)] text-[var(--color-void)]"
-                  : "text-[var(--color-lo)] hover:text-[var(--color-ink)]"
+                  ? "bg-[var(--color-ink)] !text-[var(--color-film)]"
+                  : "hover:!text-[var(--color-ink)]"
               }`}
             >
               {t}
@@ -52,13 +63,71 @@ export function VaultActions({ vault, onChanged }: { vault: Address; onChanged: 
         </div>
       </div>
 
-      <div className="rule my-6" />
+      <div className="px-6 py-6">
+        {tab === "deposit" ? (
+          <DepositForm vault={vault} onChanged={onChanged} />
+        ) : (
+          <WithdrawForm vault={vault} onChanged={onChanged} />
+        )}
+      </div>
 
-      {tab === "deposit" ? (
-        <DepositForm vault={vault} onChanged={onChanged} />
-      ) : (
-        <WithdrawForm vault={vault} onChanged={onChanged} />
-      )}
+      <PauseRow vault={vault} />
+    </div>
+  );
+}
+
+/* ── pause ────────────────────────────────────────────────────────────────── */
+
+function PauseRow({ vault }: { vault: Address }) {
+  const meta = useVaultMeta(vault);
+  const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const { isLoading: confirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  useEffect(() => {
+    if (isSuccess) meta.refetch();
+    // meta.refetch is a fresh closure each render; keying on the receipt is what
+    // makes this fire once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSuccess]);
+
+  const paused = meta.paused ?? false;
+  const busy = isPending || confirming;
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 border-t border-[var(--hair-2)] px-6 py-5">
+      <div className="min-w-0">
+        <div className="label">{paused ? "Paused" : "Running"}</div>
+        <p className="mt-2 max-w-[58ch] text-[12.5px] leading-relaxed text-[var(--color-ink-3)]">
+          {paused
+            ? "Curtis cannot re-range or compound while paused. Your withdrawal still works."
+            : "Pausing stops Curtis immediately and permanently until you resume. It cannot stop you withdrawing."}
+        </p>
+        {error && (
+          <p className="mt-2 text-[12px] text-[var(--color-oxide)]">
+            {error.message.split("\n")[0].slice(0, 160)}
+          </p>
+        )}
+      </div>
+
+      <div className="flex items-center gap-4">
+        <Button
+          variant={paused ? "primary" : "danger"}
+          size="sm"
+          loading={busy}
+          onClick={() =>
+            writeContract({
+              abi: CurtisVaultAbi,
+              address: vault,
+              functionName: "setPaused",
+              args: [!paused],
+              chainId: ACTIVE_CHAIN_ID,
+            })
+          }
+        >
+          {busy ? "Confirming" : paused ? "Resume Curtis" : "Pause Curtis"}
+        </Button>
+        {hash && <TxLink hash={hash} />}
+      </div>
     </div>
   );
 }
@@ -72,12 +141,17 @@ function DepositForm({ vault, onChanged }: { vault: Address; onChanged: () => vo
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const { isLoading: confirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
-  if (isSuccess) {
-    setTimeout(() => {
+  // Was a bare setTimeout in the render body, which re-queued on every render
+  // while the receipt stayed cached.
+  useEffect(() => {
+    if (!isSuccess) return;
+    const t = window.setTimeout(() => {
       onChanged();
       reset();
     }, 400);
-  }
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSuccess]);
 
   const parsed = (k: TokenKey) => {
     try {
@@ -134,24 +208,26 @@ function DepositForm({ vault, onChanged }: { vault: Address; onChanged: () => vo
   };
 
   return (
-    <div className="space-y-4">
-      {(["usdt", "wbot"] as const).map((k) => (
-        <TokenInput
-          key={k}
-          tokenKey={k}
-          value={amounts[k]}
-          onChange={(v) => setAmounts((a) => ({ ...a, [k]: v }))}
-          owner={address}
-        />
-      ))}
+    <div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {(["usdt", "wbot"] as const).map((k) => (
+          <TokenInput
+            key={k}
+            tokenKey={k}
+            value={amounts[k]}
+            onChange={(v) => setAmounts((a) => ({ ...a, [k]: v }))}
+            owner={address}
+          />
+        ))}
+      </div>
 
       {error && (
-        <p className="text-[12px] leading-relaxed text-[var(--color-bad)]">
+        <p className="mt-4 border-l-2 border-[var(--color-oxide)] pl-3 text-[12px] leading-relaxed text-[var(--color-oxide)]">
           {error.message.split("\n")[0].slice(0, 160)}
         </p>
       )}
 
-      <div className="flex items-center gap-3 pt-1">
+      <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3">
         <Button
           variant="primary"
           onClick={needsApproval ? approve : deposit}
@@ -166,19 +242,10 @@ function DepositForm({ vault, onChanged }: { vault: Address; onChanged: () => vo
               ? `Approve ${TOKENS[needing!].symbol}`
               : "Deposit"}
         </Button>
-        {hash && (
-          <a
-            href={explorerTx(hash)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="tabular text-[12px] text-[var(--color-lo)] underline-offset-4 hover:text-[var(--color-accent)] hover:underline"
-          >
-            View transaction
-          </a>
-        )}
+        {hash && <TxLink hash={hash} />}
       </div>
 
-      <p className="text-[11.5px] leading-relaxed text-[var(--color-faint)]">
+      <p className="mt-5 max-w-[68ch] text-[11.5px] leading-relaxed text-[var(--color-ink-4)]">
         Deposited funds sit idle in your vault until Curtis opens a position with
         them. You can withdraw at any time, including while he is paused.
       </p>
@@ -212,12 +279,12 @@ function TokenInput({
   const formatted = formatUnits(bal, token.decimals);
 
   return (
-    <div className="glass-quiet rounded-2xl px-4 py-3.5">
-      <div className="flex items-center justify-between">
+    <div className="border border-[var(--hair-2)] bg-[var(--color-film)] px-4 py-3.5 focus-within:border-[var(--color-ink)]">
+      <div className="flex items-center justify-between gap-3">
         <span className="label">{token.symbol}</span>
         <button
           onClick={() => onChange(formatted)}
-          className="tabular text-[11.5px] text-[var(--color-faint)] transition-colors hover:text-[var(--color-accent)]"
+          className="meter text-[11.5px] text-[var(--color-ink-4)] transition-colors hover:text-[var(--color-oxide)]"
         >
           balance {Number(formatted).toLocaleString(undefined, { maximumFractionDigits: 4 })}
         </button>
@@ -227,7 +294,7 @@ function TokenInput({
         onChange={(e) => onChange(e.target.value.replace(/[^0-9.]/g, ""))}
         placeholder="0.0"
         inputMode="decimal"
-        className="tabular mt-2 w-full bg-transparent text-[22px] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-faint)]"
+        className="meter mt-2 w-full bg-transparent text-[22px] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-4)]"
       />
     </div>
   );
@@ -239,12 +306,15 @@ function WithdrawForm({ vault, onChanged }: { vault: Address; onChanged: () => v
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const { isLoading: confirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
-  if (isSuccess) {
-    setTimeout(() => {
+  useEffect(() => {
+    if (!isSuccess) return;
+    const t = window.setTimeout(() => {
       onChanged();
       reset();
     }, 400);
-  }
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSuccess]);
 
   const busy = isPending || confirming;
 
@@ -262,34 +332,37 @@ function WithdrawForm({ vault, onChanged }: { vault: Address; onChanged: () => v
   };
 
   return (
-    <div className="space-y-5">
-      <p className="text-[13.5px] leading-relaxed text-[var(--color-mid)]">
+    <div>
+      <p className="max-w-[68ch] text-[13.5px] leading-relaxed text-[var(--color-ink-2)]">
         This closes any open position, collects the fees it earned, and sends
         every token back to your wallet. It works even while Curtis is paused.
       </p>
 
       {error && (
-        <p className="text-[12px] leading-relaxed text-[var(--color-bad)]">
+        <p className="mt-4 border-l-2 border-[var(--color-oxide)] pl-3 text-[12px] leading-relaxed text-[var(--color-oxide)]">
           {error.message.split("\n")[0].slice(0, 160)}
         </p>
       )}
 
-      <div className="flex items-center gap-3">
+      <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3">
         <Button variant="danger" onClick={withdraw} loading={busy}>
           {busy ? (confirming ? "Confirming" : "Check your wallet") : "Withdraw everything"}
         </Button>
-        {hash && (
-          <a
-            href={explorerTx(hash)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="tabular text-[12px] text-[var(--color-lo)] underline-offset-4 hover:text-[var(--color-accent)] hover:underline"
-          >
-            View transaction
-          </a>
-        )}
+        {hash && <TxLink hash={hash} />}
       </div>
     </div>
   );
 }
 
+function TxLink({ hash }: { hash: string }) {
+  return (
+    <a
+      href={explorerTx(hash)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="meter text-[12px] text-[var(--color-prussian)] underline decoration-[var(--hair-2)] underline-offset-[3px] transition-colors hover:text-[var(--color-oxide)] hover:decoration-[var(--color-oxide)]"
+    >
+      View transaction
+    </a>
+  );
+}

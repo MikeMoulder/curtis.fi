@@ -3,23 +3,28 @@
 
    A single sphere carrying six states. Everything is driven from three CSS
    custom properties set on the root (--c-core, --c-mid, --c-rim) so a state
-   change re-tints the whole character — glow, orbit, scan sweep, ground
+   change re-tints the whole character — wash, orbit, scan sweep, ground
    bounce — in one place instead of six.
 
+   He is lit for a light room. The sphere sits on cold drafting film, not black
+   glass, so there is no bloom and no neon: pigments out of the sheet's own
+   palette, a hairline object line around the body, and a hard contact shadow.
+   Intensity of state is carried by motion and by tint, never by glow.
+
    The layer stack, back to front:
-     halo      volumetric bloom, sits well outside the body
-     orbit     two counter-rotating rings + travelling particles
+     halo      faint tint wash in the film immediately around him
+     orbit     two counter-rotating hairline rings + travelling particles
      body      the sphere itself: base gradient, inner shading, specular
      scan      a sweep that crosses the body while scanning
      face      eyes, pupils, blink
-     ground    contact shadow + reflected bloom
+     ground    contact shadow
    ========================================================================== */
 
 .root {
-  --c-core: #9ecbff;
-  --c-mid: #4c9ffe;
-  --c-rim: #1f5fb5;
-  --glow: 0.55;
+  --c-core: #6f9fbe;
+  --c-mid: var(--color-prussian-2);
+  --c-rim: var(--color-prussian);
+  --glow: 0.3;
   --lift: 0px;
 
   position: relative;
@@ -30,37 +35,41 @@
   isolation: isolate;
 }
 
-/* -- state tints ---------------------------------------------------------- */
+/* -- state tints -----------------------------------------------------------
+   Every tint comes out of the sheet's palette. The ground here is cold film,
+   not black glass, so a saturated glow would read as a smudge — these are
+   pigments, and the intensity of the state is carried by motion instead. */
 
 .state-scanning {
-  --c-core: #b6e4ff;
-  --c-mid: #40b6f0;
-  --c-rim: #1d6fa8;
-  --glow: 0.7;
+  --c-core: #7fb0cd;
+  --c-mid: #3d7196;
+  --c-rim: #1c4a68;
+  --glow: 0.36;
 }
 .state-thinking {
-  --c-core: #b9b6ff;
-  --c-mid: #7a72f0;
-  --c-rim: #443db0;
-  --glow: 0.62;
+  --c-core: #6b93b2;
+  --c-mid: #2f5f80;
+  --c-rim: #17394f;
+  --glow: 0.32;
 }
+/* Brass: the agent is doing something of its own accord. */
 .state-acting {
-  --c-core: #d6e9ff;
-  --c-mid: #59aeff;
-  --c-rim: #2f7fe0;
-  --glow: 1;
+  --c-core: #c2a663;
+  --c-mid: var(--color-brass-2);
+  --c-rim: var(--color-brass);
+  --glow: 0.5;
 }
 .state-success {
-  --c-core: #b6ffdd;
-  --c-mid: #34d399;
-  --c-rim: #1c8f68;
-  --glow: 0.85;
+  --c-core: #6aa688;
+  --c-mid: #3d8a63;
+  --c-rim: var(--color-arc-green);
+  --glow: 0.42;
 }
 .state-alert {
-  --c-core: #ffd2c2;
-  --c-mid: #f5b544;
-  --c-rim: #b56a1f;
-  --glow: 0.8;
+  --c-core: #d98d6a;
+  --c-mid: var(--color-oxide-2);
+  --c-rim: var(--color-oxide);
+  --glow: 0.46;
 }
 
 /* -- floating carriage ---------------------------------------------------- */
@@ -89,19 +98,21 @@
   }
 }
 
-/* -- halo ----------------------------------------------------------------- */
+/* -- halo -----------------------------------------------------------------
+   On a light ground a bloom is mud, so this is a wash: a faint tint of the
+   film immediately around him, enough to say the sphere is lit without
+   pretending the page is dark. */
 
 .halo {
   position: absolute;
-  inset: -34%;
+  inset: -22%;
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    color-mix(in srgb, var(--c-mid) 34%, transparent) 0%,
-    color-mix(in srgb, var(--c-rim) 16%, transparent) 38%,
-    transparent 68%
+    color-mix(in srgb, var(--c-mid) 16%, transparent) 0%,
+    transparent 62%
   );
-  filter: blur(18px);
+  filter: blur(12px);
   opacity: var(--glow);
   animation: halo-breathe 4.6s ease-in-out infinite;
   z-index: -3;
@@ -112,15 +123,15 @@
 
 .haloTight {
   position: absolute;
-  inset: -8%;
+  inset: -4%;
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    color-mix(in srgb, var(--c-core) 30%, transparent) 0%,
-    transparent 62%
+    color-mix(in srgb, var(--c-core) 14%, transparent) 0%,
+    transparent 58%
   );
-  filter: blur(8px);
-  opacity: calc(var(--glow) * 0.9);
+  filter: blur(6px);
+  opacity: calc(var(--glow) * 0.8);
   z-index: -2;
   animation: halo-breathe 3.1s ease-in-out infinite reverse;
 }
@@ -137,13 +148,15 @@
   }
 }
 
-/* -- orbit ---------------------------------------------------------------- */
+/* -- orbit ----------------------------------------------------------------
+   Read as graduation rather than sci-fi: hairlines at the weight every other
+   drawn ring on the sheet uses. */
 
 .orbit {
   position: absolute;
   inset: -6%;
   border-radius: 50%;
-  border: 1px solid color-mix(in srgb, var(--c-mid) 26%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-rim) 34%, transparent);
   z-index: -1;
   transition: border-color 0.6s ease;
 }
@@ -155,7 +168,7 @@
 
 .orbitB {
   inset: -16%;
-  border-color: color-mix(in srgb, var(--c-mid) 15%, transparent);
+  border-color: color-mix(in srgb, var(--c-rim) 18%, transparent);
   animation: spin 22s linear infinite reverse;
   transform: rotateX(64deg) rotateZ(58deg);
 }
@@ -182,10 +195,8 @@
   height: 5px;
   margin-left: -2.5px;
   border-radius: 50%;
-  background: var(--c-core);
-  box-shadow:
-    0 0 8px 2px color-mix(in srgb, var(--c-core) 70%, transparent),
-    0 0 16px 4px color-mix(in srgb, var(--c-mid) 45%, transparent);
+  background: var(--c-rim);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-film) 70%, transparent);
 }
 
 /* -- body ----------------------------------------------------------------- */
@@ -199,16 +210,19 @@
   background:
     radial-gradient(
       circle at 30% 24%,
-      color-mix(in srgb, var(--c-core) 92%, transparent) 0%,
+      color-mix(in srgb, var(--c-core) 78%, var(--color-film)) 0%,
       var(--c-mid) 34%,
       var(--c-rim) 72%,
-      color-mix(in srgb, var(--c-rim) 70%, #06121f) 100%
+      color-mix(in srgb, var(--c-rim) 74%, var(--color-ink)) 100%
     );
+  /* Inner modelling, then a hard-edged drop and a hairline object line. A
+     40px black blur under a sphere on film reads as a fingerprint smudge;
+     this reads as the sphere resting on the sheet. */
   box-shadow:
-    inset -14% -14% 26% rgb(0 0 0 / 0.34),
-    inset 8% 8% 20% rgb(255 255 255 / 0.22),
-    0 0 40px -4px color-mix(in srgb, var(--c-mid) 55%, transparent),
-    0 18px 40px -12px rgb(0 0 0 / 0.7);
+    inset -12% -12% 22% rgb(19 29 28 / 0.26),
+    inset 7% 7% 18% rgb(255 255 255 / 0.2),
+    0 0 0 1px rgb(19 29 28 / 0.2),
+    0 10px 20px -10px rgb(19 29 28 / 0.4);
   transition:
     background 0.6s ease,
     box-shadow 0.6s ease;
@@ -285,11 +299,11 @@
   border-radius: 50%;
   background: radial-gradient(
     circle at 74% 78%,
-    color-mix(in srgb, var(--c-core) 40%, transparent) 0%,
+    color-mix(in srgb, var(--c-core) 34%, transparent) 0%,
     transparent 42%
   );
   mix-blend-mode: screen;
-  opacity: 0.7;
+  opacity: 0.55;
 }
 
 /* -- scan sweep ----------------------------------------------------------- */
@@ -340,11 +354,9 @@
   width: 15%;
   aspect-ratio: 0.72;
   min-width: 9px;
-  background: #f2f8ff;
+  background: var(--color-film);
   border-radius: 50%;
-  box-shadow:
-    0 0 10px 1px rgb(255 255 255 / 0.55),
-    0 1px 3px rgb(0 0 0 / 0.3);
+  box-shadow: 0 1px 3px rgb(19 29 28 / 0.35);
   animation: blink 5.4s ease-in-out infinite;
   transform-origin: center;
 }
@@ -358,9 +370,7 @@
 
 .state-acting .eye {
   animation: blink 2.4s ease-in-out infinite;
-  box-shadow:
-    0 0 16px 3px rgb(255 255 255 / 0.8),
-    0 1px 3px rgb(0 0 0 / 0.3);
+  box-shadow: 0 1px 3px rgb(19 29 28 / 0.35);
 }
 
 @keyframes blink {
@@ -392,7 +402,7 @@
   height: 52%;
   margin: -26% 0 0 -26%;
   border-radius: 50%;
-  background: #0b1424;
+  background: var(--color-ink);
   transform: translate(var(--pupil-x, 0px), var(--pupil-y, 0px));
   transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -405,7 +415,7 @@
   width: 34%;
   height: 34%;
   border-radius: 50%;
-  background: rgb(255 255 255 / 0.9);
+  background: rgb(255 255 255 / 0.85);
 }
 
 /* -- ground --------------------------------------------------------------- */
@@ -420,10 +430,10 @@
   border-radius: 50%;
   background: radial-gradient(
     ellipse at center,
-    color-mix(in srgb, var(--c-mid) 40%, transparent) 0%,
+    rgb(19 29 28 / 0.3) 0%,
     transparent 72%
   );
-  filter: blur(7px);
+  filter: blur(5px);
   animation: ground-react 5.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
   z-index: -1;
 }
@@ -451,12 +461,11 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 5px;
-  height: 5px;
-  margin: -2.5px 0 0 -2.5px;
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
   border-radius: 50%;
-  background: var(--c-core);
-  box-shadow: 0 0 10px 2px color-mix(in srgb, var(--c-core) 70%, transparent);
+  background: var(--c-rim);
   pointer-events: none;
   animation: spark-out 0.78s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
@@ -477,7 +486,7 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 2px solid color-mix(in srgb, var(--c-core) 65%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--c-rim) 55%, transparent);
   pointer-events: none;
   animation: shock-out 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
@@ -500,7 +509,7 @@
 }
 
 .interactive:hover {
-  --glow: 0.95;
+  --glow: 0.6;
 }
 
 .interactive:active .body {

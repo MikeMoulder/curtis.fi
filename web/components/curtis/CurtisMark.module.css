@@ -1,0 +1,182 @@
+/* ==========================================================================
+   CURTIS — the mark
+
+   A sphere with two eyes, floating, blinking. Three custom properties carry
+   the whole thing (--tint-lit, --tint, --tint-deep), so a state change
+   re-tints sphere, rim and contact shadow from one place.
+
+   Everything is sized off --mark, set inline by the component, so the mark
+   holds together at 24px in a footer cell and at 64px on a splash. No em
+   units: this span inherits an unknown font-size and shadows would drift.
+   ========================================================================== */
+
+.root {
+  --tint-lit: var(--color-prussian-2);
+  --tint: var(--color-prussian);
+  --tint-deep: var(--color-ink);
+
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  width: var(--mark);
+  height: var(--mark);
+  line-height: 0;
+}
+
+/* -- the sphere ----------------------------------------------------------- */
+
+.orb {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 33% 27%,
+    color-mix(in srgb, var(--tint-lit) 70%, var(--color-film)) 0%,
+    var(--tint-lit) 32%,
+    var(--tint) 68%,
+    var(--tint-deep) 100%
+  );
+  /* Inner shading on the far side, a soft lift on the lit side, and a single
+     hairline object line — the same 1px stroke every drawn edge on the sheet
+     gets, so the sphere belongs to the drawing rather than sitting on top. */
+  box-shadow:
+    inset calc(var(--mark) * -0.1) calc(var(--mark) * -0.1) calc(var(--mark) * 0.22)
+      rgb(19 29 28 / 0.3),
+    inset calc(var(--mark) * 0.055) calc(var(--mark) * 0.055) calc(var(--mark) * 0.14)
+      rgb(255 255 255 / 0.2),
+    0 0 0 1px rgb(19 29 28 / 0.22);
+  animation: mark-float 5.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  transition: background 0.5s var(--ease-draw);
+}
+
+/* -- the face ------------------------------------------------------------- */
+
+.face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Slightly above centre: eyes on the equator read as a diagram, eyes a
+     little high read as a face. */
+  padding-bottom: 8%;
+  /* Set against the original 160px character, where the eye pair spanned about
+     29% of the sphere. Here it spans 37% — a mark at 28px needs bigger features
+     than a portrait at 160px does, or the face closes up into two grey dots. */
+  gap: 11%;
+}
+
+/* Both eyes blink on the same beat. A mark that winks looks broken. */
+.eye {
+  width: 13%;
+  height: 18.5%;
+  min-width: 3px;
+  min-height: 4px;
+  border-radius: 50%;
+  background: var(--color-film);
+  box-shadow: 0 1px 2px rgb(19 29 28 / 0.25);
+  animation: mark-blink 5.2s ease-in-out infinite;
+  transform-origin: center;
+}
+
+/* -- contact shadow ------------------------------------------------------- */
+
+.shadow {
+  position: absolute;
+  bottom: calc(var(--mark) * -0.07);
+  left: 50%;
+  width: 56%;
+  height: 6%;
+  min-height: 2px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgb(19 29 28 / 0.26) 0%,
+    transparent 72%
+  );
+  animation: mark-ground 5.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+/* -- states ---------------------------------------------------------------
+   Only the tint changes. The mark is an identity first and a status second,
+   so a state never alters its silhouette. */
+
+.scanning {
+  --tint-lit: #4d86ad;
+  --tint: var(--color-prussian);
+}
+
+.thinking {
+  --tint-lit: var(--color-prussian-2);
+  --tint: #17394f;
+}
+
+/* The agent acting is the one thing that gets brass, everywhere on the site. */
+.acting {
+  --tint-lit: var(--color-brass-2);
+  --tint: var(--color-brass);
+}
+
+.success {
+  --tint-lit: #3d8a63;
+  --tint: var(--color-arc-green);
+}
+
+.alert {
+  --tint-lit: var(--color-oxide-2);
+  --tint: var(--color-oxide);
+}
+
+/* Hovering the wordmark wakes him up slightly. Cheap, and it is the reason
+   people click a logo twice. */
+.root:hover .orb {
+  animation-duration: 2.9s;
+}
+.root:hover .eye {
+  animation-duration: 2.4s;
+}
+
+/* -- motion --------------------------------------------------------------- */
+
+@keyframes mark-float {
+  0%,
+  100% {
+    transform: translateY(calc(var(--mark) * -0.025));
+  }
+  50% {
+    transform: translateY(calc(var(--mark) * 0.03));
+  }
+}
+
+/* The shadow tightens as he rises, which is what sells the float. */
+@keyframes mark-ground {
+  0%,
+  100% {
+    transform: translateX(-50%) scaleX(0.86);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translateX(-50%) scaleX(1.08);
+    opacity: 0.85;
+  }
+}
+
+@keyframes mark-blink {
+  0%,
+  91%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb,
+  .eye,
+  .shadow {
+    animation: none !important;
+  }
+}

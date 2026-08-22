@@ -124,6 +124,14 @@ export function useVaultMeta(vault: Address | null) {
     agent: agent.data as Address | undefined,
     tokenId: tokenId.data as bigint | undefined,
     rebalancesRemaining: remaining.data as bigint | undefined,
+    /* The polling interval already keeps these current, but pausing is a control
+       the owner presses and then looks at — a twelve-second wait to see whether
+       it worked reads as the button having failed. */
+    refetch: () => {
+      void paused.refetch();
+      void tokenId.refetch();
+      void remaining.refetch();
+    },
   };
 }
 

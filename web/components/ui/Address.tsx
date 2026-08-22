@@ -50,7 +50,7 @@ export function Address({
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="tabular text-[12px] text-[var(--color-mid)] underline-offset-4 transition-colors hover:text-[var(--color-accent)] hover:underline"
+        className="meter text-[12px] text-[var(--color-prussian)] underline decoration-[var(--hair-2)] underline-offset-[3px] transition-colors hover:text-[var(--color-oxide)] hover:decoration-[var(--color-oxide)]"
         title={value}
       >
         {shortAddress(value, chars)}
@@ -58,14 +58,14 @@ export function Address({
       {copyable && (
         <button
           onClick={copy}
-          className="text-[var(--color-faint)] transition-colors hover:text-[var(--color-mid)]"
+          className="text-[var(--color-ink-4)] transition-colors hover:text-[var(--color-ink)]"
           aria-label={copied ? "Copied" : "Copy to clipboard"}
         >
           {copied ? (
             <svg className="size-3" viewBox="0 0 12 12" fill="none" aria-hidden="true">
               <path
                 d="M2.5 6.2 4.8 8.5 9.5 3.8"
-                stroke="var(--color-good)"
+                stroke="var(--color-arc-green)"
                 strokeWidth="1.6"
                 strokeLinecap="round"
                 strokeLinejoin="round"

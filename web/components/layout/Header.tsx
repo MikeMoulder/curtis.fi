@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Curtis } from "@/components/curtis/Curtis";
+import { CurtisMark } from "@/components/curtis/CurtisMark";
 import { ConnectButton } from "@/components/wallet/ConnectButton";
+import { activeChain, ACTIVE_CHAIN_ID, isTestnet } from "@/lib/chains";
 
 const NAV = [
   { href: "/dashboard", label: "Vault" },
@@ -12,61 +12,71 @@ const NAV = [
 ];
 
 /**
- * Transparent over the hero, and only takes on a surface once the page has
- * scrolled — a bar that is always frosted crops the display type at the top of
- * the viewport, which is the first thing that makes a page feel boxed in.
+ * The top edge of the sheet.
+ *
+ * Opaque and ruled from the first pixel rather than fading in on scroll: a
+ * drawing has a border, and a border that appears only once you move is a
+ * webpage affectation. Nothing here floats.
  */
 export function Header() {
   const pathname = usePathname();
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50">
-      <div
-        className={`transition-all duration-500 ${
-          scrolled
-            ? "border-b border-white/[0.06] bg-[rgb(6_7_9_/_0.72)] backdrop-blur-xl"
-            : "border-b border-transparent"
-        }`}
-      >
-        <div className="mx-auto flex h-[68px] max-w-[1240px] items-center gap-8 px-6">
-          <Link href="/" className="group flex items-center gap-3">
-            <Curtis size={26} interactive={false} state="idle" />
-            <span className="display text-[21px] tracking-[-0.02em]">Curtis</span>
-          </Link>
+    <header className="sticky top-0 z-40 border-b border-[var(--hair-2)] bg-[var(--color-film)]">
+      <div className="sheet flex h-14 items-center gap-7">
+        <Link href="/" className="flex items-center gap-2.5">
+          <CurtisMark size={30} state="idle" decorative />
+          <span
+            className="text-[15px] tracking-[0.16em] uppercase"
+            style={{
+              fontFamily: "var(--font-display)",
+              fontVariationSettings: '"wdth" 112',
+              fontWeight: 700,
+            }}
+          >
+            Curtis
+          </span>
+        </Link>
 
-          <nav className="hidden items-center gap-7 sm:flex">
-            {NAV.map((item) => {
-              const active = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`relative text-[13px] transition-colors ${
-                    active
-                      ? "text-[var(--color-ink)]"
-                      : "text-[var(--color-lo)] hover:text-[var(--color-ink)]"
-                  }`}
-                >
-                  {item.label}
-                  {active && (
-                    <span className="absolute -bottom-1.5 left-0 h-px w-full bg-[var(--color-accent)]" />
-                  )}
-                </Link>
-              );
-            })}
-          </nav>
+        <nav className="hidden items-center gap-6 sm:flex">
+          {NAV.map((item) => {
+            const active = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`label transition-colors ${
+                  active
+                    ? "!text-[var(--color-oxide)]"
+                    : "hover:!text-[var(--color-ink)]"
+                }`}
+              >
+                {item.label}
+                {active && (
+                  <span className="mt-1.5 block h-[1.5px] w-full bg-[var(--color-oxide)]" />
+                )}
+              </Link>
+            );
+          })}
+        </nav>
 
-          <div className="ml-auto flex items-center gap-4">
-            <ConnectButton />
-          </div>
+        <div className="ml-auto flex items-center gap-5">
+          {/* Which chain you are actually on. On a two-network product with a
+              token that changes decimals between them, this is safety
+              information, not chrome. */}
+          <span className="hidden items-center gap-2 md:flex">
+            <span
+              className={`pulse size-[5px] shrink-0 ${
+                isTestnet ? "bg-[var(--color-arc-amber)]" : "bg-[var(--color-arc-green)]"
+              }`}
+              aria-hidden="true"
+            />
+            <span className="label">
+              {isTestnet ? "Bohr" : "BOT Chain"} · {ACTIVE_CHAIN_ID}
+            </span>
+            <span className="sr-only">{activeChain.name}</span>
+          </span>
+          <ConnectButton />
         </div>
       </div>
     </header>

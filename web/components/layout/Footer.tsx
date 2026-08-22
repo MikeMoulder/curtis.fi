@@ -1,169 +1,187 @@
 import Link from "next/link";
-import { Curtis } from "@/components/curtis/Curtis";
+import { CurtisMark } from "@/components/curtis/CurtisMark";
 import { addresses } from "@/lib/addresses";
 import { activeChain, ACTIVE_CHAIN_ID, explorerAddress, isTestnet } from "@/lib/chains";
 
 const MEASURED_ON = "15 August 2026";
 
 /**
- * The footer does real work rather than holding a logo and a legal line.
+ * A DRAWING TITLE BLOCK.
  *
- * Every contract the product touches is listed with a link to the explorer, so
- * a visitor can verify what they are about to interact with before connecting a
- * wallet. On a chain this young that is the difference between a product and a
- * page: the addresses are the claim, and they are checkable.
+ * Every engineering drawing ends in one, and its fields are not decorative —
+ * they record who drew the thing and who checked it, because those are
+ * different people and the distinction is the whole quality system.
+ *
+ * That maps exactly onto this project's architecture, which is why the device
+ * is here rather than borrowed for looks: Curtis DRAWS (the off-chain policy
+ * chooses a range) and CurtisVault CHECKS (the contract refuses anything
+ * outside the owner's bounds). The title block states that split as fact, and
+ * every address in it is a link an outsider can verify before connecting a
+ * wallet. On a chain this young, checkable addresses are the difference
+ * between a product and a page.
  */
 export function Footer() {
-  const contracts: [string, string | null][] = [
-    ["Vault factory", addresses.curtisFactory],
-    ["BDEX pool", addresses.pool],
-    ["Position manager", addresses.positionManager],
+  const rows: [string, string, string | null][] = [
+    ["Vault factory", "CurtisFactory.sol", addresses.curtisFactory],
+    ["Pool", "USDT / WBOT · 0.30%", addresses.pool],
+    ["Position manager", "BDEX NFPM", addresses.positionManager],
   ];
 
   return (
-    <footer className="mt-auto border-t border-white/[0.07]">
-      <div className="mx-auto max-w-[1240px] px-6 py-16">
-        <div className="grid gap-12 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
-          {/* brand */}
-          <div>
-            <div className="flex items-center gap-3">
-              <Curtis size={26} interactive={false} state="idle" />
-              <span className="display text-[19px]">Curtis</span>
-            </div>
-            <p className="mt-5 max-w-[260px] text-[13px] leading-relaxed text-[var(--color-lo)]">
-              An autonomous agent that holds a concentrated liquidity position
-              over the market price on BDEX, inside limits your vault enforces
-              in its own code.
-            </p>
+    <footer className="mt-24 border-t border-[var(--color-ink)]">
+      <div className="sheet py-12">
+        {/* ── the block ───────────────────────────────────────────────────
+            Ruled cells, like the real thing. Grid lines are the structure,
+            so there are no card borders fighting them. */}
+        <div className="border border-[var(--hair-2)]">
+          <div className="grid md:grid-cols-[1.5fr_1fr_1fr]">
+            {/* drawn by */}
+            <Cell label="Drawn" className="md:border-r">
+              <div className="flex items-center gap-2.5">
+                <CurtisMark size={28} state="idle" decorative />
+                <span className="text-[14px] text-[var(--color-ink)]">
+                  Curtis — off-chain policy
+                </span>
+              </div>
+              <p className="mt-2.5 text-[12.5px] leading-relaxed text-[var(--color-ink-3)]">
+                Reads the pool, sizes the band against observed volatility,
+                signs with its own key.
+              </p>
+            </Cell>
 
-            <div className="mt-6 inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5">
-              <span
-                className={`pulse size-1.5 rounded-full ${
-                  isTestnet ? "bg-[var(--color-warn)]" : "bg-[var(--color-good)]"
-                }`}
-                aria-hidden="true"
-              />
-              <span className="label !text-[var(--color-mid)]">
-                {activeChain.name} · {ACTIVE_CHAIN_ID}
+            {/* checked by */}
+            <Cell label="Checked" className="md:border-r">
+              <span className="meter text-[13px] text-[var(--color-ink)]">
+                CurtisVault.sol
               </span>
-            </div>
+              <p className="mt-2.5 text-[12.5px] leading-relaxed text-[var(--color-ink-3)]">
+                Refuses any range that is one-sided, off-centre, mis-sized or
+                over the daily limit.
+              </p>
+            </Cell>
+
+            {/* sheet data */}
+            <Cell label="Sheet">
+              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
+                <Field k="Network" v={`${activeChain.name} · ${ACTIVE_CHAIN_ID}`} />
+                <Field k="Tier" v="0.30% · spacing 60" />
+                <Field k="Tests" v="46 fork · both networks" />
+                <Field k="Measured" v={MEASURED_ON} />
+                <Field k="Rev" v={isTestnet ? "testnet" : "mainnet"} />
+              </dl>
+            </Cell>
           </div>
 
-          {/* product */}
-          <FooterColumn title="Product">
-            <FooterLink href="/dashboard">Your vault</FooterLink>
-            <FooterLink href="/activity">Decision log</FooterLink>
-            <FooterLink href="/#study">How it works</FooterLink>
-          </FooterColumn>
-
-          {/* contracts */}
-          <FooterColumn title="Contracts">
-            {contracts.map(([label, addr]) =>
-              addr ? (
-                <a
-                  key={label}
-                  href={explorerAddress(addr)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group block"
-                >
-                  <span className="block text-[13px] text-[var(--color-mid)] transition-colors group-hover:text-[var(--color-ink)]">
-                    {label}
+          {/* ── addresses ──────────────────────────────────────────────── */}
+          <div className="grid border-t border-[var(--hair-2)] sm:grid-cols-3">
+            {rows.map(([label, sub, addr], i) => (
+              <div
+                key={label}
+                className={`px-5 py-4 ${
+                  i > 0 ? "border-t border-[var(--hair-2)] sm:border-t-0 sm:border-l" : ""
+                }`}
+              >
+                <div className="label">{label}</div>
+                <div className="mt-2 text-[12.5px] text-[var(--color-ink-2)]">{sub}</div>
+                {addr ? (
+                  <a
+                    href={explorerAddress(addr)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="meter mt-1 block text-[11.5px] text-[var(--color-prussian)] underline decoration-[var(--hair-2)] underline-offset-[3px] transition-colors hover:text-[var(--color-oxide)] hover:decoration-[var(--color-oxide)]"
+                  >
+                    {addr.slice(0, 10)}…{addr.slice(-8)}
+                  </a>
+                ) : (
+                  <span className="meter mt-1 block text-[11.5px] text-[var(--color-ink-4)]">
+                    not deployed on this network
                   </span>
-                  <span className="tabular mt-0.5 block text-[11px] text-[var(--color-faint)] transition-colors group-hover:text-[var(--color-accent)]">
-                    {addr.slice(0, 6)}…{addr.slice(-4)}
-                  </span>
-                </a>
-              ) : (
-                <div key={label}>
-                  <span className="block text-[13px] text-[var(--color-mid)]">{label}</span>
-                  <span className="mt-0.5 block text-[11px] text-[var(--color-faint)]">
-                    not deployed
-                  </span>
-                </div>
-              )
-            )}
-          </FooterColumn>
-
-          {/* network */}
-          <FooterColumn title="Network">
-            <FooterExternal href={activeChain.blockExplorers.default.url}>
-              Block explorer
-            </FooterExternal>
-            <FooterExternal href={activeChain.rpcUrls.default.http[0]}>
-              RPC endpoint
-            </FooterExternal>
-            <FooterExternal href="https://dex.botchain.ai">BDEX</FooterExternal>
-            {isTestnet && (
-              <FooterExternal href="https://faucet.bohr.life/basic/">
-                Testnet faucet
-              </FooterExternal>
-            )}
-          </FooterColumn>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="rule-fade my-10" />
+        {/* ── links + notes ─────────────────────────────────────────────── */}
+        <div className="mt-10 flex flex-wrap gap-x-10 gap-y-6">
+          <nav className="flex flex-wrap gap-x-7 gap-y-3">
+            <Anchor href="/dashboard">Your vault</Anchor>
+            <Anchor href="/activity">Decision log</Anchor>
+            <External href={activeChain.blockExplorers.default.url}>Explorer</External>
+            <External href="https://dex.botchain.ai">BDEX</External>
+            {isTestnet && (
+              <External href="https://faucet.bohr.life/basic/">Faucet</External>
+            )}
+          </nav>
+        </div>
 
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <p className="max-w-[620px] text-[11.5px] leading-relaxed text-[var(--color-faint)]">
-            Figures shown were measured from BDEX pool data on {MEASURED_ON}. Passive
-            APR is fees divided by total pool liquidity, which is what a full-range
-            position earns. Providing liquidity carries risk, including impermanent
-            loss, which Curtis reduces and cannot remove. Past fee generation does not
-            guarantee future returns, and nothing here is financial advice.
+        <div className="rule mt-8" />
+
+        <div className="mt-6 flex flex-col gap-4 lg:flex-row lg:justify-between">
+          {/* Four sentences here became three, and the measurement date left with
+              one of them — it is already a field in the block above, and a footer
+              that says the same date twice reads as boilerplate. */}
+          <p className="max-w-[600px] text-[11.5px] leading-relaxed text-[var(--color-ink-4)]">
+            Figures come from BDEX pool data, measured on the date above. Passive
+            APR is fees over total pool liquidity — what a full-range position
+            earns, and the honest denominator for every comparison made here.
+            Providing liquidity carries risk including impermanent loss, which
+            Curtis reduces and cannot remove. Not financial advice.
           </p>
-          <p className="shrink-0 text-[11.5px] text-[var(--color-faint)]">
-            Built for the BOT Chain Builder Challenge
-          </p>
+          <p className="label shrink-0">BOT Chain Builder Challenge</p>
         </div>
       </div>
     </footer>
   );
 }
 
-function FooterColumn({ title, children }: { title: string; children: React.ReactNode }) {
+function Cell({
+  label,
+  children,
+  className = "",
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div>
-      <h3 className="label">{title}</h3>
-      <div className="mt-5 space-y-3.5">{children}</div>
+    <div className={`border-[var(--hair-2)] px-5 py-4 not-last:border-b md:not-last:border-b-0 ${className}`}>
+      <div className="label">{label}</div>
+      <div className="mt-3">{children}</div>
     </div>
   );
 }
 
-function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
+function Field({ k, v }: { k: string; v: string }) {
+  return (
+    <>
+      <dt className="label !tracking-[0.1em]">{k}</dt>
+      <dd className="meter text-[11.5px] text-[var(--color-ink-2)]">{v}</dd>
+    </>
+  );
+}
+
+function Anchor({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <Link
       href={href}
-      className="block text-[13px] text-[var(--color-mid)] transition-colors hover:text-[var(--color-ink)]"
+      className="label transition-colors hover:!text-[var(--color-oxide)]"
     >
       {children}
     </Link>
   );
 }
 
-function FooterExternal({ href, children }: { href: string; children: React.ReactNode }) {
+function External({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex items-center gap-1.5 text-[13px] text-[var(--color-mid)] transition-colors hover:text-[var(--color-ink)]"
+      className="label transition-colors hover:!text-[var(--color-oxide)]"
     >
       {children}
-      <svg
-        className="size-2.5 opacity-0 transition-opacity group-hover:opacity-100"
-        viewBox="0 0 10 10"
-        fill="none"
-        aria-hidden="true"
-      >
-        <path
-          d="M2.5 7.5 7.5 2.5M7.5 2.5H3.6M7.5 2.5v3.9"
-          stroke="currentColor"
-          strokeWidth="1.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
+      <span aria-hidden="true"> ↗</span>
     </a>
   );
 }
